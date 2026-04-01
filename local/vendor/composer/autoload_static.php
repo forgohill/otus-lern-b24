@@ -21,6 +21,10 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
         array (
             'Local\\' => 6,
         ),
+        'A' =>
+        array (
+            'App\\' => 4,
+        ),
     );
 
     public static $prefixDirsPsr4 = array (
@@ -35,6 +39,10 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
         'Local\\' =>
         array (
             0 => __DIR__ . '/../..' . '/php_interface/lib',
+        ),
+        'App\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/App',
         ),
     );
 

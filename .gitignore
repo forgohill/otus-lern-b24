@@ -1,4 +1,8 @@
 .settings_extra.php
+AGENTS.md
+/local/logs/*
+!/local/logs/.gitkeep
+/.codex
 /.access.php
 /.bottom.menu.php
 /.department.menu_ext.php

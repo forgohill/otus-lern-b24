@@ -30,21 +30,21 @@ $sandboxSections = [
    // ],
   ],
  ],
- // [
- //  'title' => 'D7 и ядро',
- //  'items' => [
- //   [
- //    'label' => 'Loader',
- //    'description' => 'Проверка подключения модулей и базовых возможностей ядра.',
- //    'url' => '/local/sandbox/d7/loader/',
- //   ],
- //   [
- //    'label' => 'ORM',
- //    'description' => 'Эксперименты с D7 ORM и выборками.',
- //    'url' => '/local/sandbox/d7/orm/',
- //   ],
- //  ],
- // ],
+ [
+  'title' => 'ORM',
+  'items' => [
+   [
+    'label' => 'Cars',
+    'description' => 'Через взаимодействие с инфоблоками Cars.',
+    'url' => '/local/sandbox/orm/cars/',
+   ],
+   // [
+   //  'label' => 'ORM',
+   //  'description' => 'Эксперименты с D7 ORM и выборками.',
+   //  'url' => '/local/sandbox/d7/orm/',
+   // ],
+  ],
+ ],
  // [
  //  'title' => 'Инфоблоки',
  //  'items' => [

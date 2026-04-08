@@ -16,12 +16,22 @@ if (Loader::includeModule('ui')) {
 
 $sandboxSections = [
  [
-  'title' => 'API',
+  'title' => 'Инфоблоки - списки',
   'items' => [
    [
-    'label' => 'Cars',
+    'label' => 'OLD API',
     'description' => 'Через взаимодействие с инфоблоками Cars.',
     'url' => '/local/sandbox/api/cars/',
+   ],
+   [
+    'label' => 'ORM',
+    'description' => 'Через взаимодействие с инфоблоками Cars.',
+    'url' => '/local/sandbox/orm/cars/',
+   ],
+   [
+    'label' => 'Связывание моделей',
+    'description' => 'Тесты связывания моделей через инфоблоки Cars.',
+    'url' => '/local/sandbox/multi/cars/',
    ],
    // [
    //  'label' => 'Формы',
@@ -30,28 +40,28 @@ $sandboxSections = [
    // ],
   ],
  ],
- [
-  'title' => 'ORM',
-  'items' => [
-   [
-    'label' => 'Cars',
-    'description' => 'Через взаимодействие с инфоблоками Cars.',
-    'url' => '/local/sandbox/orm/cars/',
-   ],
-   // [
-   //  'label' => 'ORM',
-   //  'description' => 'Эксперименты с D7 ORM и выборками.',
-   //  'url' => '/local/sandbox/d7/orm/',
-   // ],
-  ],
- ],
  // [
- //  'title' => 'Инфоблоки',
+ // 'title' => 'ORM',
+ // 'items' => [
+ //  [
+ //   'label' => 'Cars',
+ //   'description' => 'Через взаимодействие с инфоблоками Cars.',
+ //   'url' => '/local/sandbox/orm/cars/',
+ //  ],
+ // [
+ //  'label' => 'ORM',
+ //  'description' => 'Эксперименты с D7 ORM и выборками.',
+ //  'url' => '/local/sandbox/d7/orm/',
+ // ],
+ //  ],
+ // ],
+ // [
+ //  'title' => 'Связывание моделей',
  //  'items' => [
  //   [
- //    'label' => 'Список элементов',
- //    'description' => 'Тесты получения и вывода элементов инфоблока.',
- //    'url' => '/local/sandbox/iblock/list/',
+ //    'label' => 'Связывание моделей',
+ //    'description' => 'Тесты связывания моделей через инфоблоки Cars.',
+ //    'url' => '/local/sandbox/multi/cars/',
  //   ],
  //   [
  //    'label' => 'Добавление элемента',

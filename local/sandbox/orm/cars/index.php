@@ -9,9 +9,6 @@ use Bitrix\Iblock\Iblock;
 
 Loader::includeModule('iblock');
 
-if (!Loader::includeModule('iblock')) {
- die('Модуль iblock не подключен');
-}
 $iblockCode = 'car';
 $iblockGet = CIBlock::GetList([], ['CODE' => $iblockCode])->Fetch();
 $iblockId = (int)$iblockGet['ID'];
@@ -130,8 +127,129 @@ while ($arItem = $dbItems->fetch()) {
  $elementsWithProperties[] = $arItem;
 }
 
+/** Метод ElementCarTable::add() создает новый элемент инфоблока через ORM, после чего при успешном добавлении через CIBlockElement::SetPropertyValuesEx() элементу задаются значения его свойств. */
+$description_7 = 'Метод ElementCarTable::add() создает новый элемент инфоблока через ORM, после чего при успешном добавлении через CIBlockElement::SetPropertyValuesEx() элементу задаются значения его свойств.';
+
+$cityIblockCode = 'city';
+$cityIblock = CIBlock::GetList([], ['CODE' => $cityIblockCode])->Fetch();
+$cityIblockId = (int)$cityIblock['ID'];
+
+$cityElement = CIBlockElement::GetList(
+ [],
+ [
+  'IBLOCK_ID' => $cityIblockId,
+  'CODE' => 'berlin',
+ ],
+ false,
+ ['nTopCount' => 1],
+ ['ID', 'NAME', 'CODE']
+)->Fetch();
+
+$cityElementId = $cityElement ? (int)$cityElement['ID'] : null;
+
+$manufacturerIblockCode = 'manufacturer';
+$manufacturerIblock = CIBlock::GetList([], ['CODE' => $manufacturerIblockCode])->Fetch();
+$manufacturerIblockId = (int)$manufacturerIblock['ID'];
+
+$manufacturerElement = CIBlockElement::GetList(
+ [],
+ [
+  'IBLOCK_ID' => $manufacturerIblockId,
+  'CODE' => 'bmw',
+ ],
+ false,
+ ['nTopCount' => 1],
+ ['ID', 'NAME', 'CODE']
+)->Fetch();
+
+$manufacturerElementId = $manufacturerElement ? (int)$manufacturerElement['ID'] : null;
 
 
+$resultAddCarTable = \Bitrix\Iblock\Elements\ElementCarTable::add(array(
+ 'NAME' => 'TEST',
+ 'ACTIVE' => 'Y',
+));
+$idForResDelete = null;
+if ($resultAddCarTable->isSuccess()) {
+ $id = $resultAddCarTable->getId();
+ $idForResDelete = $id;
+ CIBlockElement::SetPropertyValuesEx($id, false, array(
+  'MODEL' => 'X5',
+  'MANUFACTURER_ID' => $manufacturerElementId,
+  'CITY_ID' => $cityElementId,
+  'ENGINE_VOLUME' => '4',
+  'PRODUCTION_DATE' => date('d.m.Y'),
+ ));
+} else {
+ dump($resultAddCarTable->getErrorMessages());
+}
+
+/** Блок через Iblock::wakeUp() и getEntityDataClass()::getByPrimary() получает только что созданный элемент по ID, собирает снимок его данных перед удалением, отдельно обрабатывает множественное свойство CITY_ID: из ORM-коллекции берутся ID городов, затем через CIBlockElement::GetList() подтягиваются их названия, после чего формируется массив $elementBeforeDelete и выполняется удаление элемента. */
+$description_8 = 'Блок через Iblock::wakeUp() и getEntityDataClass()::getByPrimary() получает только что созданный элемент по ID, собирает снимок его данных перед удалением, отдельно обрабатывает множественное свойство CITY_ID: из ORM-коллекции берутся ID городов, затем через CIBlockElement::GetList() подтягиваются их названия, после чего формируется массив $elementBeforeDelete и выполняется удаление элемента.';
+$elementBeforeDelete = [];
+$cityIds = [];
+$cityNames = [];
+
+$iblockForDelete = Iblock::wakeUp($iblockId);
+
+if ($iblockForDelete) {
+ $element = $iblockForDelete->getEntityDataClass()::getByPrimary(
+  $idForResDelete,
+  [
+   'select' => [
+    'ID',
+    'NAME',
+    'MODEL',
+    'MANUFACTURER_ID',
+    'CITY_ID',
+    'ENGINE_VOLUME',
+    'PRODUCTION_DATE',
+   ]
+  ]
+ )->fetchObject();
+
+ if ($element) {
+  foreach ($element->get('CITY_ID') as $cityProperty) {
+   $cityId = (int)$cityProperty->getValue();
+   if ($cityId > 0) {
+    $cityIds[] = $cityId;
+   }
+  }
+
+  if ($cityIds) {
+   $cityRes = CIBlockElement::GetList(
+    [],
+    ['ID' => array_unique($cityIds)],
+    false,
+    false,
+    ['ID', 'NAME']
+   );
+
+   while ($cityRow = $cityRes->Fetch()) {
+    $cityNames[(int)$cityRow['ID']] = $cityRow['NAME'];
+   }
+  }
+
+  $cities = [];
+  foreach ($cityIds as $cityId) {
+   $cities[] = [
+    'ID' => $cityId,
+    'NAME' => $cityNames[$cityId] ?? null,
+   ];
+  }
+
+  $elementBeforeDelete = [
+   'ID' => $element->get('ID'),
+   'NAME' => $element->get('NAME'),
+   'MODEL' => $element->get('MODEL')?->getValue(),
+   'MANUFACTURER_ID' => $element->get('MANUFACTURER_ID')?->getValue(),
+   'CITY_ID' => $cities,
+   'ENGINE_VOLUME' => $element->get('ENGINE_VOLUME')?->getValue(),
+   'PRODUCTION_DATE' => $element->get('PRODUCTION_DATE')?->getValue(),
+  ];
+ }
+}
+$resDelete = \Bitrix\Iblock\Elements\ElementCarTable::delete($idForResDelete);
 
 ?>
 <style>
@@ -329,7 +447,27 @@ dump([
  'description_6' => $description_6,
  'elementsWithProperties' => $elementsWithProperties,
 ]);
+dump([
+ 'description_7' => $description_7,
+ 'resultAddCarTable' => $resultAddCarTableLog = $resultAddCarTable->isSuccess() ? $resultAddCarTable->getId() : $resultAddCarTable->getErrorMessages(),
+]);
+
+if ($resDelete->isSuccess()) {
+ dump([
+  'description_8' => $description_8,
+  'id' => $idForResDelete,
+  'message' => 'Удаление прошло успешно',
+  'elementBeforeDelete' => $elementBeforeDelete,
+ ]);
+} else {
+ dump([
+  'id' => $idForResDelete,
+  'errors' => $resDelete->getErrorMessages(),
+ ]);
+}
+
 ?>
+
 <style>
  .sandbox-study {
   max-width: 1100px;
@@ -460,17 +598,17 @@ dump([
     <h3 class="sandbox-study-title">Поиск инфоблока и конкретного элемента</h3>
 
     <pre class="sandbox-study-code"><code>$iblockCode = 'car';
-$iblockGet = CIBlock::GetList([], ['CODE' => $iblockCode])->Fetch();
-$iblockId = (int)$iblockGet['ID'];
+      $iblockGet = CIBlock::GetList([], ['CODE' => $iblockCode])->Fetch();
+      $iblockId = (int)$iblockGet['ID'];
 
-$arFilter = [
-    'IBLOCK_ID' => $iblockId,
-    'CODE' => 'audi_q7',
-];
-$res = CIBlockElement::GetList([], $arFilter, false, ['nTopCount' => 1], ['ID', 'NAME', 'CODE']);
-if ($arElement = $res->Fetch()) {
-    $iblockElementId = (int)$arElement['ID'];
-}</code></pre>
+      $arFilter = [
+          'IBLOCK_ID' => $iblockId,
+          'CODE' => 'audi_q7',
+      ];
+      $res = CIBlockElement::GetList([], $arFilter, false, ['nTopCount' => 1], ['ID', 'NAME', 'CODE']);
+      if ($arElement = $res->Fetch()) {
+          $iblockElementId = (int)$arElement['ID'];
+      }</code></pre>
 
     <p class="sandbox-study-text">
      Сначала код находит сам инфоблок по символьному коду <b>car</b>, а потом ищет внутри него один конкретный элемент по коду <b>audi_q7</b>.
@@ -488,15 +626,15 @@ if ($arElement = $res->Fetch()) {
 
     <pre class="sandbox-study-code"><code>$iblock = Iblock::wakeUp($iblockId);
 
-$element = $iblock->getEntityDataClass()::getByPrimary(
-    $iblockElementId,
-    ['select' => ['NAME', 'MODEL']]
-)->fetchObject();
+       $element = $iblock->getEntityDataClass()::getByPrimary(
+           $iblockElementId,
+           ['select' => ['NAME', 'MODEL']]
+       )->fetchObject();
 
-if ($element) {
-    $nameElement = $element->get('NAME');
-    $modelElement = $element->get('MODEL')->getValue();
-}</code></pre>
+       if ($element) {
+           $nameElement = $element->get('NAME');
+           $modelElement = $element->get('MODEL')->getValue();
+       }</code></pre>
 
     <p class="sandbox-study-text">
      Здесь уже начинается D7 ORM. Метод <b>wakeUp()</b> поднимает ORM-описание инфоблока, после чего через
@@ -518,17 +656,17 @@ if ($element) {
     <h3 class="sandbox-study-title">fetchCollection(): список как коллекция объектов</h3>
 
     <pre class="sandbox-study-code"><code>$elements = \Bitrix\Iblock\Elements\ElementCarTable::getList([
-    'select' => ['NAME', 'MODEL']
-])->fetchCollection();
+            'select' => ['NAME', 'MODEL']
+        ])->fetchCollection();
 
-if ($elements) {
-    foreach ($elements as $element) {
-        $result[] = [
-            'NAME' => $element->get('NAME'),
-            'MODEL' => $element->getModel()?->getValue(),
-        ];
-    }
-}</code></pre>
+        if ($elements) {
+            foreach ($elements as $element) {
+                $result[] = [
+                    'NAME' => $element->get('NAME'),
+                    'MODEL' => $element->getModel()?->getValue(),
+                ];
+            }
+        }</code></pre>
 
     <p class="sandbox-study-text">
      В этом блоке получаем уже не один элемент, а набор элементов. Но важно, что
@@ -551,14 +689,14 @@ if ($elements) {
     <h3 class="sandbox-study-title">fetchAll(): тот же список, но сразу массивом</h3>
 
     <pre class="sandbox-study-code"><code>$carsFetchAll = \Bitrix\Iblock\Elements\ElementCarTable::getList([
-    'select' => ['*']
-])->fetchAll();
+           'select' => ['*']
+       ])->fetchAll();
 
-if ($carsFetchAll) {
-    foreach ($carsFetchAll as $carItemAll) {
-        $carsResultAll[] = $carItemAll;
-    }
-}</code></pre>
+       if ($carsFetchAll) {
+           foreach ($carsFetchAll as $carItemAll) {
+               $carsResultAll[] = $carItemAll;
+           }
+       }</code></pre>
 
     <p class="sandbox-study-text">
      Здесь запрос похожий, но результат забирается через <b>fetchAll()</b>.
@@ -585,25 +723,25 @@ if ($carsFetchAll) {
     ->addSelect('ID')
     ->fetchCollection();
 
-foreach ($carsQuery as $carItem) {
-    $value = $carItem->getModel()->getValue();
+          foreach ($carsQuery as $carItem) {
+              $value = $carItem->getModel()->getValue();
 
-    if ($value == 'Q7') {
-        $carItem->setModel('Q7 TEST');
-        $carItem->save();
-    }
+              if ($value == 'Q7') {
+                  $carItem->setModel('Q7 TEST');
+                  $carItem->save();
+              }
 
-    $carItems[] = [
-        'ID' => $carItem->get('ID'),
-        'NAME' => $carItem->get('NAME'),
-        'MODEL' => $carItem->get('MODEL')->getValue(),
-    ];
+              $carItems[] = [
+                  'ID' => $carItem->get('ID'),
+                  'NAME' => $carItem->get('NAME'),
+                  'MODEL' => $carItem->get('MODEL')->getValue(),
+              ];
 
-    if ($carItem->getModel()->getValue() == 'Q7 TEST') {
-        $carItem->setModel('Q7');
-        $carItem->save();
-    }
-}</code></pre>
+              if ($carItem->getModel()->getValue() == 'Q7 TEST') {
+                  $carItem->setModel('Q7');
+                  $carItem->save();
+              }
+               }</code></pre>
 
     <p class="sandbox-study-text">
      Это уже более “боевой” ORM-подход. Через <b>query()</b> ты сам собираешь запрос по частям:
@@ -630,14 +768,14 @@ foreach ($carsQuery as $carItem) {
     <h3 class="sandbox-study-title">PropertyTable: получить структуру свойств инфоблока</h3>
 
     <pre class="sandbox-study-code"><code>$dbIblockProps = \Bitrix\Iblock\PropertyTable::getList([
-    'select' => ['*'],
-    'filter' => ['IBLOCK_ID' => $iblockId]
-]);
+              'select' => ['*'],
+              'filter' => ['IBLOCK_ID' => $iblockId]
+          ]);
 
-while ($arIblockProps = $dbIblockProps->fetch()) {
-    $arIblockPropsArray[] = $arIblockProps;
-    $arIblockPropsStroke[] = $arIblockProps['NAME'] . ' (' . $arIblockProps['CODE'] . ')';
-}</code></pre>
+          while ($arIblockProps = $dbIblockProps->fetch()) {
+              $arIblockPropsArray[] = $arIblockProps;
+              $arIblockPropsStroke[] = $arIblockProps['NAME'] . ' (' . $arIblockProps['CODE'] . ')';
+          }</code></pre>
 
     <p class="sandbox-study-text">
      Этот блок работает уже не с элементами, а со <b>списком свойств самого инфоблока</b>.
@@ -654,22 +792,22 @@ while ($arIblockProps = $dbIblockProps->fetch()) {
     <h3 class="sandbox-study-title">ElementTable + CIBlockElement::GetProperty(): элементы и их свойства</h3>
 
     <pre class="sandbox-study-code"><code>$dbItems = \Bitrix\Iblock\ElementTable::getList([
-    'select' => ['ID', 'NAME', 'IBLOCK_ID'],
-    'filter' => ['IBLOCK_ID' => $iblockId]
-]);
+           'select' => ['ID', 'NAME', 'IBLOCK_ID'],
+           'filter' => ['IBLOCK_ID' => $iblockId]
+       ]);    
 
-while ($arItem = $dbItems->fetch()) {
-    $dbProperty = \CIBlockElement::GetProperty(
-        $arItem['IBLOCK_ID'],
-        $arItem['ID']
-    );
+       while ($arItem = $dbItems->fetch()) {
+           $dbProperty = \CIBlockElement::GetProperty(
+               $arItem['IBLOCK_ID'],
+               $arItem['ID']
+           );
 
-    while ($arProperty = $dbProperty->Fetch()) {
-        $arItem['PROPERTIES'][] = $arProperty;
-    }
+           while ($arProperty = $dbProperty->Fetch()) {
+               $arItem['PROPERTIES'][] = $arProperty;
+           }
 
-    $elementsWithProperties[] = $arItem;
-}</code></pre>
+           $elementsWithProperties[] = $arItem;
+       }</code></pre>
 
     <p class="sandbox-study-text">
      Здесь показан смешанный подход. Сначала через <b>ElementTable</b> получаешь основные поля элементов,
@@ -686,9 +824,145 @@ while ($arItem = $dbItems->fetch()) {
      Такой вариант часто используют, когда базовые поля удобно брать через ORM, а свойства проще и привычнее дочитать классическим способом.
     </p>
    </div>
+
+   <div class="sandbox-study-card">
+    <div class="sandbox-study-badge">Шаг 8</div>
+    <h3 class="sandbox-study-title">ElementCarTable::add(): создание элемента и заполнение его свойств</h3>
+
+    <pre class="sandbox-study-code"><code>$resultAddCarTable = \Bitrix\Iblock\Elements\ElementCarTable::add([
+            'NAME' => 'TEST',
+            'ACTIVE' => 'Y',
+        ]);
+
+        if ($resultAddCarTable->isSuccess()) {
+            $id = $resultAddCarTable->getId();
+
+         CIBlockElement::SetPropertyValuesEx($id, false, [
+        'MODEL' => 'X5',
+        'MANUFACTURER_ID' => $manufacturerElementId,
+        'CITY_ID' => $cityElementId,
+        'ENGINE_VOLUME' => '4',
+               'PRODUCTION_DATE' => date('d.m.Y'),
+           ]);
+       } else {
+           dump($resultAddCarTable->getErrorMessages());
+       }</code></pre>
+
+    <p class="sandbox-study-text">
+     Здесь код сначала создаёт новый элемент инфоблока <b>car</b> через ORM-метод <b>ElementCarTable::add()</b>.
+     На этом шаге задаются только базовые поля элемента, например <b>NAME</b> и <b>ACTIVE</b>.
+    </p>
+
+    <p class="sandbox-study-text">
+     Если добавление прошло успешно, из результата берётся ID нового элемента через <b>getId()</b>.
+     Затем этому элементу отдельным вызовом задаются свойства через
+     <b>CIBlockElement::SetPropertyValuesEx()</b>: модель, производитель, город, объём двигателя и дата выхода.
+    </p>
+
+    <p class="sandbox-study-note">
+     Смысл шага в том, что элемент создаётся через ORM, а значения свойств после этого удобно дозаполняются старым API.
+     Это учебный пример смешанного подхода: D7 ORM для создания записи + классический API Bitrix для свойств.
+    </p>
+   </div>
+
+   <div class="sandbox-study-card">
+    <div class="sandbox-study-badge">Шаг 9</div>
+    <h3 class="sandbox-study-title">Получение данных перед удалением и удаление элемента</h3>
+
+    <pre class="sandbox-study-code"><code>$elementBeforeDelete = [];
+        $cityIds = [];
+        $cityNames = [];
+
+        $iblockForDelete = Iblock::wakeUp($iblockId);
+
+        if ($iblockForDelete) {
+            $element = $iblockForDelete->getEntityDataClass()::getByPrimary(
+        $idForResDelete,
+        [
+            'select' => [
+                'ID',
+                'NAME',
+                'MODEL',
+                'MANUFACTURER_ID',
+                'CITY_ID',
+                'ENGINE_VOLUME',
+                'PRODUCTION_DATE',
+            ]
+        ]
+    )->fetchObject();
+
+    if ($element) {
+        foreach ($element->get('CITY_ID') as $cityProperty) {
+            $cityId = (int)$cityProperty->getValue();
+            if ($cityId > 0) {
+                $cityIds[] = $cityId;
+            }
+        }
+
+        if ($cityIds) {
+            $cityRes = CIBlockElement::GetList(
+                [],
+                ['ID' => array_unique($cityIds)],
+                false,
+                false,
+                ['ID', 'NAME']
+            );
+
+            while ($cityRow = $cityRes->Fetch()) {
+                $cityNames[(int)$cityRow['ID']] = $cityRow['NAME'];
+            }
+        }
+
+        $cities = [];
+        foreach ($cityIds as $cityId) {
+            $cities[] = [
+                'ID' => $cityId,
+                'NAME' => $cityNames[$cityId] ?? null,
+            ];
+        }
+
+        $elementBeforeDelete = [
+            'ID' => $element->get('ID'),
+            'NAME' => $element->get('NAME'),
+            'MODEL' => $element->get('MODEL')?->getValue(),
+            'MANUFACTURER_ID' => $element->get('MANUFACTURER_ID')?->getValue(),
+            'CITY_ID' => $cities,
+            'ENGINE_VOLUME' => $element->get('ENGINE_VOLUME')?->getValue(),
+            'PRODUCTION_DATE' => $element->get('PRODUCTION_DATE')?->getValue(),
+        ];
+    }
+       }
+
+       $resDelete = \Bitrix\Iblock\Elements\ElementCarTable::delete($idForResDelete);</code></pre>
+
+    <p class="sandbox-study-text">
+     Этот блок нужен для того, чтобы перед удалением не потерять данные о только что созданном элементе.
+     Сначала код снова поднимает ORM-сущность инфоблока через <b>Iblock::wakeUp()</b> и получает элемент по его ID через
+     <b>getByPrimary(...)->fetchObject()</b>.
+    </p>
+
+    <p class="sandbox-study-text">
+     Дальше из объекта читаются поля и свойства элемента. Особенность здесь в том, что
+     <b>CITY_ID</b> — множественное свойство, поэтому код проходит по нему циклом,
+     собирает ID всех городов, а затем отдельным запросом получает их названия и
+     формирует удобный массив вида <b>ID + NAME</b>.
+    </p>
+
+    <p class="sandbox-study-text">
+     После этого собирается массив <b>$elementBeforeDelete</b> — это снимок данных элемента перед удалением.
+     Уже затем вызывается удаление по ID, а в <b>dump()</b> можно вывести и результат удаления, и данные элемента,
+     который был удалён.
+    </p>
+
+    <p class="sandbox-study-note">
+     Главная идея шага: сначала снять данные элемента перед удалением, потом удалить запись.
+     Так ты не удаляешь элемент “вслепую”, а видишь, что именно было создано и что именно потом удалилось.
+    </p>
+   </div>
   </div>
  </div>
 </div>
+
 <?php
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/footer.php');
 ?>

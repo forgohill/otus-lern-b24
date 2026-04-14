@@ -3,8 +3,19 @@
 namespace App\Clinic\Processor;
 
 use App\Debug\Log;
+use App\Iblock\Processor\ElementProcessorInterface;
 
-class DoctorElementProcessor
+/**
+ * Processor элементов инфоблока врачей.
+ *
+ * Класс содержит только doctor-специфичную бизнес-логику:
+ * - чтение фамилии и ИНН;
+ * - нормализацию данных;
+ * - валидацию обязательности, формата и уникальности ИНН;
+ * - генерацию NAME и CODE;
+ * - логирование doctor-процесса.
+ */
+class DoctorElementProcessor implements ElementProcessorInterface
 {
  private const LAST_NAME_CODE = 'LAST_NAME';
  private const INDIVIDUAL_TAX_NUMBER = 'INDIVIDUAL_TAX_NUMBER';
@@ -44,6 +55,21 @@ class DoctorElementProcessor
      'action' => $action,
      'iblock_id' => $iblockId,
      'element_id' => $elementId,
+    ]
+   );
+  }
+
+  if (!$this->isValidInn($inn)) {
+   return $this->failValidation(
+    'ИНН должен состоять ровно из 12 цифр и не может начинаться с 0.',
+    [
+     'step' => 'doctor_validation_failed',
+     'reason' => 'invalid_inn_format',
+     'action' => $action,
+     'iblock_id' => $iblockId,
+     'element_id' => $elementId,
+     'inn_raw' => $innRaw,
+     'inn_normalized' => $inn,
     ]
    );
   }
@@ -105,6 +131,21 @@ class DoctorElementProcessor
  }
 
  /**
+  * Проверяет формат ИНН врача.
+  *
+  * Правило:
+  * - только 12 цифр;
+  * - первая цифра не может быть 0.
+  *
+  * @param string $inn Нормализованный ИНН.
+  * @return bool true, если формат корректный.
+  */
+ private function isValidInn(string $inn): bool
+ {
+  return preg_match('/^[1-9][0-9]{11}$/', $inn) === 1;
+ }
+
+ /**
   * Ищет дубликат врача по ИНН.
   *
   * @param int $iblockId ID инфоблока врачей.
@@ -123,7 +164,7 @@ class DoctorElementProcessor
   );
 
   while ($row = $res->Fetch()) {
-   $candidateId = (int)$row['ID'];
+   $candidateId = (int) $row['ID'];
 
    if ($currentElementId > 0 && $candidateId === $currentElementId) {
     continue;
@@ -140,7 +181,7 @@ class DoctorElementProcessor
    if ($candidateInn === $inn) {
     return [
      'ID' => $candidateId,
-     'NAME' => (string)$row['NAME'],
+     'NAME' => (string) $row['NAME'],
      'INN' => $candidateInn,
     ];
    }
@@ -163,9 +204,9 @@ class DoctorElementProcessor
  /**
   * Строит NAME врача как транслит фамилии и ИНН.
   *
-  * @param string $lastName Фамилия.
-  * @param string $inn ИНН.
-  * @return string Сформированное имя.
+  * @param string $lastName Фамилия врача.
+  * @param string $inn ИНН врача.
+  * @return string Сформированное имя элемента.
   */
  private function buildDoctorName(string $lastName, string $inn): string
  {
@@ -196,7 +237,7 @@ class DoctorElementProcessor
   */
  private function translit(string $value, int $maxLen = 100): string
  {
-  return (string)\CUtil::translit($value, 'ru', [
+  return (string) \CUtil::translit($value, 'ru', [
    'max_len' => $maxLen,
    'change_case' => 'L',
    'replace_space' => '-',
@@ -259,7 +300,7 @@ class DoctorElementProcessor
    return $this->extractScalarValue($propertyValues[$propertyId]);
   }
 
-  $elementId = (int)($arFields['ID'] ?? 0);
+  $elementId = (int) ($arFields['ID'] ?? 0);
 
   if ($elementId > 0) {
    return $this->readCurrentPropertyValue($iblockId, $elementId, $propertyCode);
@@ -286,7 +327,7 @@ class DoctorElementProcessor
   );
 
   if ($row = $res->Fetch()) {
-   return (int)$row['ID'];
+   return (int) $row['ID'];
   }
 
   return 0;
@@ -310,7 +351,7 @@ class DoctorElementProcessor
   );
 
   if ($row = $res->Fetch()) {
-   return trim((string)($row['VALUE'] ?? ''));
+   return trim((string) ($row['VALUE'] ?? ''));
   }
 
   return '';
@@ -325,7 +366,7 @@ class DoctorElementProcessor
  private function extractScalarValue($value): string
  {
   if (is_scalar($value)) {
-   return trim((string)$value);
+   return trim((string) $value);
   }
 
   if (!is_array($value)) {
@@ -333,7 +374,7 @@ class DoctorElementProcessor
   }
 
   if (array_key_exists('VALUE', $value) && !is_array($value['VALUE'])) {
-   return trim((string)$value['VALUE']);
+   return trim((string) $value['VALUE']);
   }
 
   foreach ($value as $item) {

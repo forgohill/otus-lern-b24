@@ -4,14 +4,16 @@ if (file_exists($autoload)) {
     require_once $autoload;
 }
 
+use App\Iblock\Event\ElementEventHandler;
+
 AddEventHandler(
     'iblock',
     'OnBeforeIBlockElementAdd',
-    ['\App\Clinic\Event\ClinicCodeHandler', 'onBeforeElementAdd']
+    [ElementEventHandler::class, 'onBeforeElementAdd']
 );
 
 AddEventHandler(
     'iblock',
     'OnBeforeIBlockElementUpdate',
-    ['\App\Clinic\Event\ClinicCodeHandler', 'onBeforeElementUpdate']
+    [ElementEventHandler::class, 'onBeforeElementUpdate']
 );

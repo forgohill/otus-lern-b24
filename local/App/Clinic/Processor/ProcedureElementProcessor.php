@@ -3,8 +3,17 @@
 namespace App\Clinic\Processor;
 
 use App\Debug\Log;
+use App\Iblock\Processor\ElementProcessorInterface;
 
-class ProcedureElementProcessor
+/**
+ * Processor элементов инфоблока процедур.
+ *
+ * Класс содержит только procedure-специфичную логику:
+ * - чтение имени элемента;
+ * - генерацию CODE из названия процедуры;
+ * - логирование результата.
+ */
+class ProcedureElementProcessor implements ElementProcessorInterface
 {
  private const LOG_FILE = 'clinic_code';
 
@@ -56,7 +65,7 @@ class ProcedureElementProcessor
   */
  private function translit(string $value, int $maxLen = 100): string
  {
-  return (string)\CUtil::translit($value, 'ru', [
+  return (string) \CUtil::translit($value, 'ru', [
    'max_len' => $maxLen,
    'change_case' => 'L',
    'replace_space' => '-',
@@ -89,7 +98,7 @@ class ProcedureElementProcessor
   */
  private function readName(array $arFields, int $elementId): string
  {
-  $name = trim((string)($arFields['NAME'] ?? ''));
+  $name = trim((string) ($arFields['NAME'] ?? ''));
 
   if ($name !== '') {
    return $name;
@@ -108,7 +117,7 @@ class ProcedureElementProcessor
   );
 
   if ($row = $res->Fetch()) {
-   return trim((string)$row['NAME']);
+   return trim((string) $row['NAME']);
   }
 
   return '';

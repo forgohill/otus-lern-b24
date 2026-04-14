@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Clinic\Repository\DoctorRepository;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
-use Bitrix\Main\Localization\Loc;
 
-require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php");
+require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
+require __DIR__ . '/demo_data.php';
 
-Loc::loadMessages(__FILE__);
+$APPLICATION->SetTitle('Домашняя работа 3');
 
-$APPLICATION->SetTitle(Loc::getMessage('CLINIC_INDEX_PAGE_TITLE'));
 Loader::includeModule('ui');
-Loader::includeModule('iblock');
 
 Extension::load([
   'ui.buttons',
@@ -21,58 +18,26 @@ Extension::load([
   'ui.icon-set.main',
 ]);
 
-$doctorRepository = new DoctorRepository();
-
-$doctors = [];
-$errors = [];
-
-try {
-  $doctors = $doctorRepository->getDoctorList();
-} catch (\Throwable $e) {
-  $errors[] = 'Не удалось загрузить список врачей: ' . $e->getMessage();
-}
+$doctors = homework3GetDoctorList();
+$demoNotice = homework3GetDemoNotice();
 
 $addDoctorUrl = 'doctor_form.php';
 $addProcedureUrl = 'procedure_form.php';
 
-/**
- * Собирает полное имя врача из бизнес-полей.
- */
 function buildDoctorFullName(array $doctor): string
 {
   return trim(
-    ($doctor['LAST_NAME'] ?? '') . ' ' .
-      ($doctor['FIRST_NAME'] ?? '') . ' ' .
-      ($doctor['MIDDLE_NAME'] ?? '')
+    (string)($doctor['LAST_NAME'] ?? '') . ' ' .
+      (string)($doctor['FIRST_NAME'] ?? '') . ' ' .
+      (string)($doctor['MIDDLE_NAME'] ?? '')
   );
 }
 
-/**
- * Форматирует дату рождения для карточки.
- *
- * Поддерживаем:
- * - Y-m-d
- * - d.m.Y
- */
 function formatDoctorBirthDate(?string $birthDate): string
 {
   $birthDate = trim((string)$birthDate);
 
-  if ($birthDate === '') {
-    return '—';
-  }
-
-  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDate) === 1) {
-    $date = DateTime::createFromFormat('Y-m-d', $birthDate);
-
-    return $date instanceof DateTime ? $date->format('d.m.Y') : $birthDate;
-  }
-
-  if (preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $birthDate) === 1) {
-    return $birthDate;
-  }
-
-  return $birthDate;
+  return $birthDate !== '' ? $birthDate : 'Демо-заглушка';
 }
 ?>
 
@@ -251,10 +216,10 @@ function formatDoctorBirthDate(?string $birthDate): string
     line-height: 20px;
   }
 
-  .homework-notice--error {
-    background: #fff5f5;
-    border: 1px solid #f1c0c0;
-    color: #a82424;
+  .homework-notice--info {
+    background: #f0f7ff;
+    border: 1px solid #b9d6f7;
+    color: #1d5f98;
   }
 
   @media (max-width: 768px) {
@@ -280,11 +245,11 @@ function formatDoctorBirthDate(?string $birthDate): string
     <h1 class="homework-title"><?php $APPLICATION->ShowTitle(); ?></h1>
 
     <div>
-      <h2 class="homework-subtitle">Связанные модели — Врачи и процедуры</h2>
+      <h2 class="homework-subtitle">Врачи и процедуры</h2>
 
       <p class="homework-text">
-        Интерфейс для задания 3: список карточек врачей, переход в карточку врача,
-        а также быстрые действия для добавления врача и добавления процедуры.
+        Стартовая страница временно переведена в демо-режим. Карточки ниже нужны как
+        заглушки, чтобы страницы спокойно открывались, пока проект переделывается заново.
       </p>
     </div>
 
@@ -294,28 +259,22 @@ function formatDoctorBirthDate(?string $birthDate): string
       </a>
 
       <a href="<?= htmlspecialcharsbx($addDoctorUrl) ?>" class="ui-btn ui-btn-success ui-btn-round">
-        <span class="ui-btn-text">Добавить врача</span>
+        <span class="ui-btn-text">Открыть форму врача</span>
       </a>
 
       <a href="<?= htmlspecialcharsbx($addProcedureUrl) ?>" class="ui-btn ui-btn-primary ui-btn-round">
-        <span class="ui-btn-text">Добавить процедуру</span>
+        <span class="ui-btn-text">Открыть форму процедуры</span>
       </a>
     </div>
   </div>
 
   <div class="homework-section" id="doctors">
-    <div class="homework-section-header">Карточки врачей</div>
+    <div class="homework-section-header">Демо-карточки врачей</div>
 
     <div class="homework-section-body">
-      <?php if (!empty($errors)): ?>
-        <div class="homework-notice homework-notice--error">
-          <?php foreach ($errors as $error): ?>
-            <div><?= htmlspecialcharsbx($error) ?></div>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-
-
+      <div class="homework-notice homework-notice--info">
+        <?= htmlspecialcharsbx($demoNotice) ?>
+      </div>
 
       <?php if (!empty($doctors)): ?>
         <div class="homework-cards">
@@ -332,14 +291,12 @@ function formatDoctorBirthDate(?string $birthDate): string
                 <span class="doctor-card-label">Карточка врача</span>
 
                 <h3 class="doctor-card-name">
-                  <?= htmlspecialcharsbx($doctorFullName) ?>
+                  <?= htmlspecialcharsbx($doctorFullName !== '' ? $doctorFullName : 'Демо-врач') ?>
                 </h3>
 
                 <p class="doctor-card-meta">
                   Дата рождения:
-                  <strong>
-                    <?= htmlspecialcharsbx($doctorBirthDate) ?>
-                  </strong>
+                  <strong><?= htmlspecialcharsbx($doctorBirthDate) ?></strong>
                 </p>
               </div>
 
@@ -364,12 +321,8 @@ function formatDoctorBirthDate(?string $birthDate): string
       <?php else: ?>
         <div class="homework-empty">
           <p class="homework-text" style="margin-bottom: 16px;">
-            Врачи пока не добавлены.
+            Демо-врачи пока не подготовлены.
           </p>
-
-          <a href="<?= htmlspecialcharsbx($addDoctorUrl) ?>" class="ui-btn ui-btn-success ui-btn-round">
-            <span class="ui-btn-text">Добавить первого врача</span>
-          </a>
         </div>
       <?php endif; ?>
     </div>
@@ -382,4 +335,4 @@ function formatDoctorBirthDate(?string $birthDate): string
   </a>
 </div>
 
-<?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php"); ?>
+<?php require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/footer.php'); ?>

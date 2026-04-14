@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-use App\Clinic\Repository\ProcedureRepository;
-use App\Clinic\Service\ProcedureFormService;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
+use App\Clinic\ProcedureRepository;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
+require __DIR__ . '/demo_data.php';
 
 $APPLICATION->SetTitle('Форма процедуры');
 
 Loader::includeModule('ui');
-Loader::includeModule('iblock');
 
 Extension::load([
   'ui.forms',
@@ -27,73 +26,19 @@ $formData = [
   'description' => '',
 ];
 
-$existingProcedures = [];
-$errors = [];
-$successMessage = '';
+$existingProcedures = homework3GetProcedureRows();
+$demoNotice = homework3GetDemoNotice();
+$submitNotice = '';
 
 $cancelUrl = 'index.php';
 
-$procedureRepository = new ProcedureRepository();
-$procedureFormService = new ProcedureFormService();
-
-/**
- * Загружает существующие процедуры из инфоблока.
- *
- * Ожидаем, что ProcedureRepository::getAllForSelect()
- * вернёт массив такого вида:
- * [
- *   ['id' => 1, 'name' => 'Название процедуры'],
- *   ...
- * ]
- */
-try {
-  $existingProcedures = $procedureRepository->getAllForSelect();
-} catch (\Throwable $e) {
-  $errors[] = 'Не удалось загрузить список процедур: ' . $e->getMessage();
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
-  $action = (string)($_POST['action'] ?? 'save');
-
-  // Сохраняем введённые пользователем значения,
-  // чтобы не потерять их при ошибке валидации.
   $formData['name'] = trim((string)($_POST['name'] ?? ''));
   $formData['description'] = trim((string)($_POST['description'] ?? ''));
-
-  try {
-    /**
-     * Важно:
-     * ProcedureFormService->save() ожидает ключи:
-     * - name
-     * - description
-     *
-     * Поэтому inputs в форме ниже тоже переведены на lower-case.
-     */
-    $saveResult = $procedureFormService->save($_POST);
-
-    if (!empty($saveResult['success'])) {
-      if ($action === 'save_add_more') {
-        $successMessage = 'Процедура сохранена. Можно добавить следующую.';
-
-        // Очищаем форму для следующего ввода.
-        $formData = [
-          'name' => '',
-          'description' => '',
-        ];
-
-        // Перезагружаем список после успешного сохранения,
-        // чтобы новая процедура сразу появилась ниже.
-        $existingProcedures = $procedureRepository->getAllForSelect();
-      } else {
-        LocalRedirect($cancelUrl);
-      }
-    } else {
-      $errors = $saveResult['errors'] ?? ['Не удалось сохранить процедуру.'];
-    }
-  } catch (\Throwable $e) {
-    $errors[] = 'Ошибка при сохранении процедуры: ' . $e->getMessage();
-  }
+  $submitNotice = homework3GetDemoSubmitNotice();
 }
+
+
 ?>
 
 <style>
@@ -146,16 +91,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     line-height: 20px;
   }
 
+  .procedure-form-notice--info {
+    background: #f0f7ff;
+    border: 1px solid #b9d6f7;
+    color: #1d5f98;
+  }
+
   .procedure-form-notice--success {
     background: #f0fff4;
     border: 1px solid #b7ebc6;
     color: #1f6b38;
-  }
-
-  .procedure-form-notice--error {
-    background: #fff5f5;
-    border: 1px solid #f1c0c0;
-    color: #a82424;
   }
 
   .procedure-form-actions {
@@ -232,9 +177,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     font-size: 14px;
     line-height: 22px;
     color: #2f3b47;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .procedure-delete-btn {
@@ -247,30 +189,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     border: none;
     border-radius: 8px;
     background: transparent;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
     color: #7d8691;
+    opacity: 0.45;
+    cursor: not-allowed;
     flex: 0 0 32px;
-  }
-
-  .procedure-delete-btn:hover {
-    background: #e6eaee;
-    color: #525c69;
   }
 
   .procedure-delete-btn .ui-icon-set {
     --ui-icon-set__icon-size: 32px;
     --ui-icon-set__icon-color: currentColor;
-  }
-
-  .procedure-existing-empty {
-    border: 1px dashed #dfe5ec;
-    border-radius: 12px;
-    padding: 16px;
-    background: #fbfcfd;
-    font-size: 14px;
-    line-height: 22px;
-    color: #7d8691;
   }
 </style>
 
@@ -279,22 +206,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     <h1 class="procedure-form-title">Добавление процедуры</h1>
 
     <p class="procedure-form-text">
-      Здесь создаётся запись процедуры. Ниже формы выводится список уже существующих процедур.
+      Форма процедуры тоже временно переведена в демо-режим. Она нужна как текстовая
+      заглушка, чтобы страница открывалась без связки с инфоблоком и сервисами сохранения.
     </p>
   </div>
 
   <div class="procedure-form-card">
-    <?php if (!empty($successMessage)): ?>
-      <div class="procedure-form-notice procedure-form-notice--success">
-        <?= htmlspecialcharsbx($successMessage) ?>
-      </div>
-    <?php endif; ?>
+    <div class="procedure-form-notice procedure-form-notice--info">
+      <?= htmlspecialcharsbx($demoNotice) ?>
+    </div>
 
-    <?php if (!empty($errors)): ?>
-      <div class="procedure-form-notice procedure-form-notice--error">
-        <?php foreach ($errors as $error): ?>
-          <div><?= htmlspecialcharsbx($error) ?></div>
-        <?php endforeach; ?>
+    <?php if ($submitNotice !== ''): ?>
+      <div class="procedure-form-notice procedure-form-notice--success">
+        <?= htmlspecialcharsbx($submitNotice) ?>
       </div>
     <?php endif; ?>
 
@@ -314,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
                 name="name"
                 class="ui-ctl-element"
                 value="<?= htmlspecialcharsbx($formData['name']) ?>"
-                placeholder="Введите название процедуры">
+                placeholder="Демо: название процедуры">
             </div>
           </div>
         </div>
@@ -330,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
                 name="description"
                 class="ui-ctl-element"
                 rows="6"
-                placeholder="Введите описание процедуры"><?= htmlspecialcharsbx($formData['description']) ?></textarea>
+                placeholder="Демо: краткое описание процедуры"><?= htmlspecialcharsbx($formData['description']) ?></textarea>
             </div>
           </div>
         </div>
@@ -342,57 +266,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
           name="action"
           value="save"
           class="ui-btn ui-btn-success ui-btn-round">
-          <span class="ui-btn-text">Сохранить</span>
-        </button>
-
-        <button
-          type="submit"
-          name="action"
-          value="save_add_more"
-          class="ui-btn ui-btn-primary ui-btn-round">
-          <span class="ui-btn-text">Сохранить и добавить еще</span>
+          <span class="ui-btn-text">Проверить форму</span>
         </button>
 
         <a
           href="<?= htmlspecialcharsbx($cancelUrl) ?>"
           class="ui-btn ui-btn-light-border ui-btn-round">
-          <span class="ui-btn-text">Отмена</span>
+          <span class="ui-btn-text">Назад</span>
         </a>
       </div>
     </form>
 
     <div class="procedure-existing-block">
-      <h2 class="procedure-existing-title">Существующие процедуры</h2>
+      <h2 class="procedure-existing-title">Демо-список процедур</h2>
 
       <p class="procedure-existing-text">
-        В списке показываются только названия процедур.
+        Ниже показаны временные записи-заглушки, чтобы правая часть страницы не была пустой.
       </p>
 
-      <?php if (!empty($existingProcedures)): ?>
-        <div class="procedure-existing-scroll">
-          <ul class="procedure-existing-list">
-            <?php foreach ($existingProcedures as $procedure): ?>
-              <li class="procedure-existing-item">
-                <span class="procedure-existing-name">
-                  <?= htmlspecialcharsbx((string)($procedure['name'] ?? '')) ?>
-                </span>
+      <div class="procedure-existing-scroll">
+        <ul class="procedure-existing-list">
+          <?php foreach ($existingProcedures as $procedure): ?>
+            <li class="procedure-existing-item">
+              <span class="procedure-existing-name">
+                <?= htmlspecialcharsbx((string)($procedure['name'] ?? '')) ?>
+              </span>
 
-                <button
-                  type="button"
-                  class="procedure-delete-btn"
-                  title="Удалить"
-                  aria-label="Удалить">
-                  <div class="ui-icon-set --trash-bin"></div>
-                </button>
-              </li>
-            <?php endforeach; ?>
-          </ul>
-        </div>
-      <?php else: ?>
-        <div class="procedure-existing-empty">
-          Процедуры пока не добавлены.
-        </div>
-      <?php endif; ?>
+              <button
+                type="button"
+                class="procedure-delete-btn"
+                title="Демо-режим"
+                aria-label="Демо-режим"
+                disabled>
+                <div class="ui-icon-set --trash-bin"></div>
+              </button>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
     </div>
   </div>
 </div>

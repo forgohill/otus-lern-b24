@@ -2,17 +2,15 @@
 
 declare(strict_types=1);
 
-use App\Clinic\Repository\DoctorRepository;
-use App\Clinic\Repository\ProcedureRepository;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
+require __DIR__ . '/demo_data.php';
 
 $APPLICATION->SetTitle('Карточка врача');
 
 Loader::includeModule('ui');
-Loader::includeModule('iblock');
 
 Extension::load([
   'ui.buttons',
@@ -20,97 +18,20 @@ Extension::load([
   'ui.icon-set.main',
 ]);
 
-$doctorRepository = new DoctorRepository();
-$procedureRepository = new ProcedureRepository();
-
 $doctorId = isset($_GET['ID']) ? (int)$_GET['ID'] : 0;
+$doctor = homework3GetDoctorCardData($doctorId);
+$procedures = homework3GetProceduresByIds($doctor['procedure_ids'] ?? []);
+$demoNotice = homework3GetDemoNotice();
 
-$doctor = [];
-$procedures = [];
-$errors = [];
+$backUrl = 'index.php';
+$editUrl = 'doctor_form.php?ID=' . (int)($doctor['id'] ?? 0);
 
-if ($doctorId <= 0) {
-  $errors[] = 'Не передан ID врача.';
-} else {
-  try {
-    /**
-     * 1 запрос:
-     * загружаем врача и связанные ID процедур.
-     */
-    $doctor = $doctorRepository->getDoctorCardData($doctorId);
-
-    if ($doctor === []) {
-      $errors[] = 'Врач не найден.';
-    } else {
-      /**
-       * 2 запрос:
-       * подтягиваем сами процедуры по связанным ID.
-       */
-      $procedureIds = $doctor['procedure_ids'] ?? [];
-      $procedureIds = is_array($procedureIds) ? array_map('intval', $procedureIds) : [];
-
-      if (!empty($procedureIds)) {
-        $procedures = $procedureRepository->getByIds($procedureIds);
-      }
-    }
-  } catch (\Throwable $e) {
-    $errors[] = 'Не удалось загрузить карточку врача: ' . $e->getMessage();
-  }
-}
-
-/**
- * Собирает ФИО.
- */
-function buildDoctorFullName(array $doctor): string
-{
-  $fullName = trim((string)($doctor['full_name'] ?? ''));
-
-  if ($fullName !== '') {
-    return $fullName;
-  }
-
-  return trim(
-    ($doctor['last_name'] ?? '') . ' ' .
-      ($doctor['first_name'] ?? '') . ' ' .
-      ($doctor['middle_name'] ?? '')
-  );
-}
-
-/**
- * Форматирует дату рождения.
- */
 function formatDoctorBirthDate(?string $birthDate): string
 {
   $birthDate = trim((string)$birthDate);
 
-  if ($birthDate === '') {
-    return '—';
-  }
-
-  if (preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $birthDate) === 1) {
-    return $birthDate;
-  }
-
-  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthDate) === 1) {
-    $date = DateTime::createFromFormat('Y-m-d', $birthDate);
-
-    return $date instanceof DateTime ? $date->format('d.m.Y') : $birthDate;
-  }
-
-  return $birthDate;
+  return $birthDate !== '' ? $birthDate : 'Демо-заглушка';
 }
-
-$doctorFullName = $doctor !== [] ? buildDoctorFullName($doctor) : '';
-
-$backUrl = 'index.php';
-$editUrl = $doctorId > 0 ? 'doctor_form.php?ID=' . $doctorId : 'index.php';
-
-/**
- * Пока оставляем заглушки под удаление,
- * но сами кнопки корзин НЕ убираем.
- */
-$deleteDoctorAction = '';
-$deleteProcedureAction = '';
 ?>
 
 <style>
@@ -247,9 +168,6 @@ $deleteProcedureAction = '';
     font-size: 15px;
     line-height: 24px;
     color: #2f3b47;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .doctor-view-procedure-remove {
@@ -263,14 +181,9 @@ $deleteProcedureAction = '';
     border-radius: 8px;
     background: transparent;
     color: #7d8691;
-    cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    opacity: 0.45;
+    cursor: not-allowed;
     flex: 0 0 32px;
-  }
-
-  .doctor-view-procedure-remove:hover {
-    background: #e6eaee;
-    color: #525c69;
   }
 
   .doctor-view-procedure-remove .ui-icon-set {
@@ -278,38 +191,9 @@ $deleteProcedureAction = '';
     --ui-icon-set__icon-color: currentColor;
   }
 
-  .doctor-view-empty {
-    border: 1px dashed #dfe5ec;
-    border-radius: 12px;
-    background: #fbfcfd;
-    padding: 18px 20px;
-    font-size: 15px;
-    line-height: 24px;
-    color: #7d8691;
-  }
-
-  .doctor-view-edit-btn {
-    border-color: #2fc6f6 !important;
-    color: #2fc6f6 !important;
-    background: #ffffff !important;
-  }
-
-  .doctor-view-edit-btn:hover {
-    border-color: #2fc6f6 !important;
-    background: #2fc6f6 !important;
-    color: #ffffff !important;
-  }
-
-  .doctor-view-danger-btn {
-    border-color: #ff5752 !important;
-    color: #ff5752 !important;
-    background: #ffffff !important;
-  }
-
-  .doctor-view-danger-btn:hover {
-    border-color: #ff5752 !important;
-    background: #ff5752 !important;
-    color: #ffffff !important;
+  .doctor-view-danger-btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   .doctor-view-notice {
@@ -318,12 +202,9 @@ $deleteProcedureAction = '';
     margin-bottom: 20px;
     font-size: 14px;
     line-height: 20px;
-  }
-
-  .doctor-view-notice--error {
-    background: #fff5f5;
-    border: 1px solid #f1c0c0;
-    color: #a82424;
+    background: #f0f7ff;
+    border: 1px solid #b9d6f7;
+    color: #1d5f98;
   }
 
   @media (max-width: 768px) {
@@ -343,8 +224,8 @@ $deleteProcedureAction = '';
     <h1 class="doctor-view-title">Карточка врача</h1>
 
     <p class="doctor-view-text">
-      Здесь выводятся основные данные врача и список процедур,
-      которые он выполняет.
+      Эта страница временно показывает демо-карточку. Она нужна как безопасная заглушка,
+      пока данные врача, дата рождения и ИНН будут переделываться заново.
     </p>
 
     <div class="doctor-view-toolbar">
@@ -352,112 +233,82 @@ $deleteProcedureAction = '';
         <span class="ui-btn-text">Назад к списку</span>
       </a>
 
-      <?php if ($doctor !== []): ?>
-        <a href="<?= htmlspecialcharsbx($editUrl) ?>" class="ui-btn ui-btn-light-border ui-btn-round doctor-view-edit-btn">
-          <span class="ui-btn-text">
-            Редактировать
-          </span>
-        </a>
+      <a href="<?= htmlspecialcharsbx($editUrl) ?>" class="ui-btn ui-btn-light-border ui-btn-round">
+        <span class="ui-btn-text">Редактировать</span>
+      </a>
 
-        <form action="<?= htmlspecialcharsbx($deleteDoctorAction) ?>" method="post" style="margin: 0;">
-          <?= bitrix_sessid_post() ?>
-          <input type="hidden" name="DOCTOR_ID" value="<?= (int)($doctor['id'] ?? 0) ?>">
-
-          <button type="submit" class="ui-btn ui-btn-light-border ui-btn-round doctor-view-danger-btn">
-            <span class="ui-btn-text">
-              Удалить врача
-            </span>
-          </button>
-        </form>
-      <?php endif; ?>
+      <button type="button" class="ui-btn ui-btn-light-border ui-btn-round doctor-view-danger-btn" disabled>
+        <span class="ui-btn-text">Удаление позже</span>
+      </button>
     </div>
   </div>
 
-  <?php if (!empty($errors)): ?>
-    <div class="doctor-view-notice doctor-view-notice--error">
-      <?php foreach ($errors as $error): ?>
-        <div><?= htmlspecialcharsbx($error) ?></div>
-      <?php endforeach; ?>
-    </div>
-  <?php endif; ?>
+  <div class="doctor-view-notice">
+    <?= htmlspecialcharsbx($demoNotice) ?>
+  </div>
 
-  <?php if ($doctor !== []): ?>
-    <div class="doctor-view-card">
-      <div class="doctor-view-card-header">Данные врача</div>
+  <div class="doctor-view-card">
+    <div class="doctor-view-card-header">Данные врача</div>
 
-      <div class="doctor-view-card-body">
-        <div class="doctor-view-grid">
-          <div class="doctor-view-field">
-            <span class="doctor-view-field-label">ФИО</span>
-            <p class="doctor-view-field-value">
-              <?= htmlspecialcharsbx($doctorFullName !== '' ? $doctorFullName : '—') ?>
-            </p>
-          </div>
+    <div class="doctor-view-card-body">
+      <div class="doctor-view-grid">
+        <div class="doctor-view-field">
+          <span class="doctor-view-field-label">ФИО</span>
+          <p class="doctor-view-field-value">
+            <?= htmlspecialcharsbx((string)($doctor['full_name'] ?? 'Демо-врач')) ?>
+          </p>
+        </div>
 
-          <div class="doctor-view-field">
-            <span class="doctor-view-field-label">Дата рождения</span>
-            <p class="doctor-view-field-value">
-              <?= htmlspecialcharsbx(formatDoctorBirthDate($doctor['birth_date'] ?? '')) ?>
-            </p>
-          </div>
+        <div class="doctor-view-field">
+          <span class="doctor-view-field-label">Дата рождения</span>
+          <p class="doctor-view-field-value">
+            <?= htmlspecialcharsbx(formatDoctorBirthDate($doctor['birth_date'] ?? '')) ?>
+          </p>
+        </div>
 
-          <div class="doctor-view-field">
-            <span class="doctor-view-field-label">ИНН</span>
-            <p class="doctor-view-field-value">
-              <?= htmlspecialcharsbx((string)($doctor['individual_tax_number'] ?? '—')) ?>
-            </p>
-          </div>
+        <div class="doctor-view-field">
+          <span class="doctor-view-field-label">ИНН</span>
+          <p class="doctor-view-field-value">Временная заглушка</p>
+        </div>
 
-          <div class="doctor-view-field">
-            <span class="doctor-view-field-label">ID врача</span>
-            <p class="doctor-view-field-value">
-              <?= (int)($doctor['id'] ?? 0) ?>
-            </p>
-          </div>
+        <div class="doctor-view-field">
+          <span class="doctor-view-field-label">ID врача</span>
+          <p class="doctor-view-field-value">
+            <?= (int)($doctor['id'] ?? 0) ?>
+          </p>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="doctor-view-card">
-      <div class="doctor-view-card-header">Процедуры врача</div>
+  <div class="doctor-view-card">
+    <div class="doctor-view-card-header">Процедуры врача</div>
 
-      <div class="doctor-view-card-body">
-        <?php if (!empty($procedures)): ?>
-          <div class="doctor-view-procedures">
-            <?php foreach ($procedures as $procedure): ?>
-              <div class="doctor-view-procedure-item">
-                <div class="doctor-view-procedure-main">
-                  <span class="doctor-view-procedure-bullet"></span>
+    <div class="doctor-view-card-body">
+      <div class="doctor-view-procedures">
+        <?php foreach ($procedures as $procedure): ?>
+          <div class="doctor-view-procedure-item">
+            <div class="doctor-view-procedure-main">
+              <span class="doctor-view-procedure-bullet"></span>
 
-                  <span class="doctor-view-procedure-name">
-                    <?= htmlspecialcharsbx((string)($procedure['name'] ?? '')) ?>
-                  </span>
-                </div>
+              <span class="doctor-view-procedure-name">
+                <?= htmlspecialcharsbx((string)($procedure['name'] ?? '')) ?>
+              </span>
+            </div>
 
-                <form action="<?= htmlspecialcharsbx($deleteProcedureAction) ?>" method="post" style="margin: 0;">
-                  <?= bitrix_sessid_post() ?>
-                  <input type="hidden" name="DOCTOR_ID" value="<?= (int)($doctor['id'] ?? 0) ?>">
-                  <input type="hidden" name="PROCEDURE_ID" value="<?= (int)($procedure['id'] ?? 0) ?>">
-
-                  <button
-                    type="submit"
-                    class="doctor-view-procedure-remove"
-                    title="Удалить"
-                    aria-label="Удалить">
-                    <span class="ui-icon-set --trash-bin"></span>
-                  </button>
-                </form>
-              </div>
-            <?php endforeach; ?>
+            <button
+              type="button"
+              class="doctor-view-procedure-remove"
+              title="Демо-режим"
+              aria-label="Демо-режим"
+              disabled>
+              <span class="ui-icon-set --trash-bin"></span>
+            </button>
           </div>
-        <?php else: ?>
-          <div class="doctor-view-empty">
-            У этого врача пока не назначены процедуры.
-          </div>
-        <?php endif; ?>
+        <?php endforeach; ?>
       </div>
     </div>
-  <?php endif; ?>
+  </div>
 </div>
 
 <?php require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/footer.php'); ?>

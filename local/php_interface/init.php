@@ -4,16 +4,16 @@ if (file_exists($autoload)) {
     require_once $autoload;
 }
 
-use App\Iblock\Event\ElementEventHandler;
+// use App\Iblock\Event\ElementEventHandler;
 
-AddEventHandler(
-    'iblock',
-    'OnBeforeIBlockElementAdd',
-    [ElementEventHandler::class, 'onBeforeElementAdd']
-);
+// AddEventHandler(
+//     'iblock',
+//     'OnBeforeIBlockElementAdd',
+//     [ElementEventHandler::class, 'onBeforeElementAdd']
+// );
 
-AddEventHandler(
-    'iblock',
-    'OnBeforeIBlockElementUpdate',
-    [ElementEventHandler::class, 'onBeforeElementUpdate']
-);
+// AddEventHandler(
+//     'iblock',
+//     'OnBeforeIBlockElementUpdate',
+//     [ElementEventHandler::class, 'onBeforeElementUpdate']
+// );

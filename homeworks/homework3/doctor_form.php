@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Clinic\Repository\DoctorRepository;
-use App\Clinic\Repository\ProcedureRepository;
-use App\Clinic\Service\DoctorFormService;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
+require __DIR__ . '/demo_data.php';
 
 $doctorId = isset($_GET['ID']) ? (int)$_GET['ID'] : 0;
 $isEditMode = $doctorId > 0;
@@ -16,7 +14,6 @@ $isEditMode = $doctorId > 0;
 $APPLICATION->SetTitle($isEditMode ? 'Редактирование врача' : 'Добавление врача');
 
 Loader::includeModule('ui');
-Loader::includeModule('iblock');
 
 Extension::load([
   'ui.buttons',
@@ -24,82 +21,13 @@ Extension::load([
   'ui.fonts.opensans',
 ]);
 
-$doctorRepository = new DoctorRepository();
-$procedureRepository = new ProcedureRepository();
-$doctorFormService = new DoctorFormService();
+$formData = $isEditMode
+  ? homework3GetDoctorForEdit($doctorId)
+  : homework3GetDoctorDraftFormData();
 
-$formData = [
-  'LAST_NAME' => '',
-  'FIRST_NAME' => '',
-  'MIDDLE_NAME' => '',
-  'BIRTH_DATE' => '',
-  'INN' => '',
-  'PROCEDURES' => [],
-];
-
-$errors = [];
-$procedures = [];
-
-/**
- * Приводит дату к формату value для input[type="date"].
- * Поддерживает:
- * - d.m.Y
- * - Y-m-d
- */
-function normalizeDateForInput(?string $value): string
-{
-  $value = trim((string)$value);
-
-  if ($value === '') {
-    return '';
-  }
-
-  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
-    return $value;
-  }
-
-  if (preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $value) === 1) {
-    $date = DateTime::createFromFormat('d.m.Y', $value);
-
-    return $date instanceof DateTime ? $date->format('Y-m-d') : '';
-  }
-
-  return '';
-}
-
-try {
-  /**
-   * Ожидаем формат:
-   * [
-   *   5 => 'Название процедуры',
-   *   7 => 'Название процедуры 2',
-   * ]
-   */
-  $procedures = $procedureRepository->getAllNames();
-} catch (\Throwable $e) {
-  $errors[] = 'Не удалось загрузить список процедур: ' . $e->getMessage();
-}
-
-if ($isEditMode) {
-  try {
-    $doctor = $doctorRepository->getDoctorForEdit($doctorId);
-
-    if ($doctor === []) {
-      $errors[] = 'Врач не найден.';
-    } else {
-      $formData = [
-        'LAST_NAME' => (string)($doctor['last_name'] ?? ''),
-        'FIRST_NAME' => (string)($doctor['first_name'] ?? ''),
-        'MIDDLE_NAME' => (string)($doctor['middle_name'] ?? ''),
-        'BIRTH_DATE' => normalizeDateForInput((string)($doctor['birth_date'] ?? '')),
-        'INN' => (string)($doctor['individual_tax_number'] ?? ''),
-        'PROCEDURES' => array_map('intval', $doctor['procedure_ids'] ?? []),
-      ];
-    }
-  } catch (\Throwable $e) {
-    $errors[] = 'Не удалось загрузить данные врача: ' . $e->getMessage();
-  }
-}
+$procedures = homework3GetProcedureNames();
+$demoNotice = homework3GetDemoNotice();
+$submitNotice = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
   $formData['LAST_NAME'] = trim((string)($_POST['LAST_NAME'] ?? ''));
@@ -111,29 +39,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
   $postedProcedures = $_POST['PROCEDURES'] ?? [];
   $postedProcedures = is_array($postedProcedures) ? array_map('intval', $postedProcedures) : [];
 
-  /**
-   * Оставляем только реально существующие ID процедур.
-   */
   $formData['PROCEDURES'] = array_values(array_filter(
     $postedProcedures,
     static fn(int $id): bool => isset($procedures[$id])
   ));
 
-  try {
-    $saveResult = $doctorFormService->save($formData, $isEditMode ? $doctorId : null);
-
-    if (!empty($saveResult['success'])) {
-      LocalRedirect('doctor_view.php?ID=' . (int)$saveResult['id']);
-    }
-
-    $errors = $saveResult['errors'] ?? ['Не удалось сохранить врача.'];
-  } catch (\Throwable $e) {
-    $errors[] = 'Ошибка при сохранении врача: ' . $e->getMessage();
-  }
+  $submitNotice = homework3GetDemoSubmitNotice();
 }
 
 $cancelUrl = $isEditMode
-  ? 'doctor_view.php?ID=' . $doctorId
+  ? 'doctor_view.php?ID=' . (int)$doctorId
   : 'index.php';
 
 $selectedProcedureNames = [];
@@ -194,10 +109,16 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
     line-height: 20px;
   }
 
-  .doctor-form-notice--error {
-    background: #fff5f5;
-    border: 1px solid #f1c0c0;
-    color: #a82424;
+  .doctor-form-notice--info {
+    background: #f0f7ff;
+    border: 1px solid #b9d6f7;
+    color: #1d5f98;
+  }
+
+  .doctor-form-notice--success {
+    background: #f0fff4;
+    border: 1px solid #b7ebc6;
+    color: #1f6b38;
   }
 
   .doctor-form-grid {
@@ -281,16 +202,19 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
     </h1>
 
     <p class="doctor-form-text">
-      Форма работает с бизнес-данными врача: фамилия, имя, отчество, дата рождения, ИНН и процедуры.
+      Форма переведена в безопасный демо-режим. Поля даты рождения и ИНН пока
+      оставлены как текстовые заглушки, чтобы страница не падала во время переделки проекта.
     </p>
   </div>
 
   <div class="doctor-form-card">
-    <?php if (!empty($errors)): ?>
-      <div class="doctor-form-notice doctor-form-notice--error">
-        <?php foreach ($errors as $error): ?>
-          <div><?= htmlspecialcharsbx($error) ?></div>
-        <?php endforeach; ?>
+    <div class="doctor-form-notice doctor-form-notice--info">
+      <?= htmlspecialcharsbx($demoNotice) ?>
+    </div>
+
+    <?php if ($submitNotice !== ''): ?>
+      <div class="doctor-form-notice doctor-form-notice--success">
+        <?= htmlspecialcharsbx($submitNotice) ?>
       </div>
     <?php endif; ?>
 
@@ -311,7 +235,7 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
               name="LAST_NAME"
               class="ui-ctl-element"
               value="<?= htmlspecialcharsbx($formData['LAST_NAME']) ?>"
-              placeholder="Введите фамилию">
+              placeholder="Демо: фамилия врача">
           </div>
         </div>
 
@@ -324,7 +248,7 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
               name="FIRST_NAME"
               class="ui-ctl-element"
               value="<?= htmlspecialcharsbx($formData['FIRST_NAME']) ?>"
-              placeholder="Введите имя">
+              placeholder="Демо: имя врача">
           </div>
         </div>
 
@@ -337,7 +261,7 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
               name="MIDDLE_NAME"
               class="ui-ctl-element"
               value="<?= htmlspecialcharsbx($formData['MIDDLE_NAME']) ?>"
-              placeholder="Введите отчество">
+              placeholder="Демо: отчество врача">
           </div>
         </div>
 
@@ -351,6 +275,10 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
               class="ui-ctl-element"
               value="<?= htmlspecialcharsbx($formData['BIRTH_DATE']) ?>">
           </div>
+
+          <div class="doctor-form-hint">
+            Временная заглушка. Поле оставлено только для безопасного открытия страницы.
+          </div>
         </div>
 
         <div class="doctor-form-field doctor-form-field--full">
@@ -362,7 +290,11 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
               name="INN"
               class="ui-ctl-element"
               value="<?= htmlspecialcharsbx($formData['INN']) ?>"
-              placeholder="Введите ИНН">
+              placeholder="Временная заглушка, можно не заполнять">
+          </div>
+
+          <div class="doctor-form-hint">
+            Поле временно отключено от реального сохранения и оставлено как демо-текст.
           </div>
         </div>
 
@@ -387,7 +319,7 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
           </div>
 
           <div class="doctor-form-hint">
-            Для выбора нескольких процедур удерживай Ctrl или Cmd.
+            Здесь показан демо-список процедур, чтобы верстка формы не была пустой.
           </div>
 
           <?php if (!empty($selectedProcedureNames)): ?>
@@ -408,11 +340,11 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
 
       <div class="doctor-form-actions">
         <button type="submit" class="ui-btn ui-btn-success ui-btn-round">
-          <span class="ui-btn-text">Сохранить</span>
+          <span class="ui-btn-text">Проверить форму</span>
         </button>
 
         <a href="<?= htmlspecialcharsbx($cancelUrl) ?>" class="ui-btn ui-btn-light-border ui-btn-round">
-          <span class="ui-btn-text">Отмена</span>
+          <span class="ui-btn-text">Назад</span>
         </a>
       </div>
     </form>

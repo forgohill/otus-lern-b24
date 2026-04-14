@@ -39,6 +39,14 @@ function formatDoctorBirthDate(?string $birthDate): string
 
   return $birthDate !== '' ? $birthDate : 'Демо-заглушка';
 }
+
+$doctorRepository = new \App\Clinic\DoctorRepository();
+
+$doctors = $doctorRepository->getList();
+// dd($doctors);
+// foreach ($doctors as $doctor) {
+//   echo htmlspecialcharsbx($doctor['FULL_NAME']) . '<br>';
+// }
 ?>
 
 <style>
@@ -272,9 +280,7 @@ function formatDoctorBirthDate(?string $birthDate): string
     <div class="homework-section-header">Демо-карточки врачей</div>
 
     <div class="homework-section-body">
-      <div class="homework-notice homework-notice--info">
-        <?= htmlspecialcharsbx($demoNotice) ?>
-      </div>
+
 
       <?php if (!empty($doctors)): ?>
         <div class="homework-cards">
@@ -294,10 +300,7 @@ function formatDoctorBirthDate(?string $birthDate): string
                   <?= htmlspecialcharsbx($doctorFullName !== '' ? $doctorFullName : 'Демо-врач') ?>
                 </h3>
 
-                <p class="doctor-card-meta">
-                  Дата рождения:
-                  <strong><?= htmlspecialcharsbx($doctorBirthDate) ?></strong>
-                </p>
+
               </div>
 
               <div class="doctor-card-actions">

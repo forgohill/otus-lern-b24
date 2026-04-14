@@ -14,8 +14,10 @@ final class ClinicConfig
  public const DOCTOR_MIDDLE_NAME = 'MIDDLE_NAME';
  public const DOCTOR_PROCEDURE_IDS = 'PROC_IDS_MULTI';
 
- // public const PROCEDURE_DESCRIPTION = 'PROCEDURE_DESCRIPTION';
- public const PROCEDURE_DESCRIPTION = 'PROCEDURE_DESCRIPTION.VALUE';
+ public const PROCEDURES_IBLOCK_CODE = 'procedures';
+
+ public const PROCEDURE_DESCRIPTION = 'PROCEDURE_DESCRIPTION';
+ public const PROCEDURE_DESCRIPTION_VALUE = 'PROCEDURE_DESCRIPTION.VALUE';
 
 
  private function __construct() {}

@@ -19,7 +19,7 @@ class ProcedureRepository
     'ID',
     'NAME',
     'CODE',
-    'DESCRIPTION' => ClinicConfig::PROCEDURE_DESCRIPTION,
+    'DESCRIPTION' => ClinicConfig::PROCEDURE_DESCRIPTION_VALUE,
    ],
    'filter' => [
     '=ACTIVE' => 'Y',
@@ -43,7 +43,7 @@ class ProcedureRepository
     'ID',
     'NAME',
     'CODE',
-    'DESCRIPTION' => ClinicConfig::PROCEDURE_DESCRIPTION,
+    'DESCRIPTION' => ClinicConfig::PROCEDURE_DESCRIPTION_VALUE,
    ],
   ])->fetch();
 

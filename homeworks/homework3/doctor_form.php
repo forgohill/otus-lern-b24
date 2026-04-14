@@ -2,61 +2,140 @@
 
 declare(strict_types=1);
 
+use App\Clinic\DoctorRepository;
+use App\Clinic\DoctorService;
+use App\Clinic\ProcedureRepository;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
-require __DIR__ . '/demo_data.php';
 
-$doctorId = isset($_GET['ID']) ? (int)$_GET['ID'] : 0;
+$doctorId = isset($_GET['ID']) ? (int)$_GET['ID'] : (int)($_POST['ID'] ?? 0);
 $isEditMode = $doctorId > 0;
 
-$APPLICATION->SetTitle($isEditMode ? 'Редактирование врача' : 'Добавление врача');
+$APPLICATION->SetTitle($isEditMode ? 'Редактирование врача' : 'Форма врача');
 
 Loader::includeModule('ui');
 
 Extension::load([
-  'ui.buttons',
   'ui.forms',
+  'ui.buttons',
+  'ui.layout-form',
   'ui.fonts.opensans',
+  'ui.entity-selector',
 ]);
 
-$formData = $isEditMode
-  ? homework3GetDoctorForEdit($doctorId)
-  : homework3GetDoctorDraftFormData();
+$formData = [
+  'last_name' => '',
+  'first_name' => '',
+  'middle_name' => '',
+  'procedure_ids' => [],
+];
 
-$procedures = homework3GetProcedureNames();
-$demoNotice = homework3GetDemoNotice();
-$submitNotice = '';
+$errors = [];
+$successMessage = '';
+$cancelUrl = 'index.php';
+$formActionUrl = 'doctor_form.php' . ($isEditMode ? '?ID=' . $doctorId : '');
+
+try {
+  $procedureRepository = new ProcedureRepository();
+  $procedures = $procedureRepository->getList();
+} catch (\Throwable $exception) {
+  $procedures = [];
+  $errors[] = $exception->getMessage();
+}
+
+try {
+  $doctorRepository = new DoctorRepository();
+
+  if ($isEditMode && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $doctor = $doctorRepository->getById($doctorId);
+
+    if ($doctor === null) {
+      $errors[] = 'Врач не найден';
+      $isEditMode = false;
+      $doctorId = 0;
+      $formActionUrl = 'doctor_form.php';
+      $APPLICATION->SetTitle('Форма врача');
+    } else {
+      $formData = [
+        'last_name' => (string)($doctor['LAST_NAME'] ?? ''),
+        'first_name' => (string)($doctor['FIRST_NAME'] ?? ''),
+        'middle_name' => (string)($doctor['MIDDLE_NAME'] ?? ''),
+        'procedure_ids' => is_array($doctor['PROCEDURE_IDS'] ?? null)
+          ? $doctor['PROCEDURE_IDS']
+          : [],
+      ];
+    }
+  }
+} catch (\Throwable $exception) {
+  $errors[] = $exception->getMessage();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
-  $formData['LAST_NAME'] = trim((string)($_POST['LAST_NAME'] ?? ''));
-  $formData['FIRST_NAME'] = trim((string)($_POST['FIRST_NAME'] ?? ''));
-  $formData['MIDDLE_NAME'] = trim((string)($_POST['MIDDLE_NAME'] ?? ''));
-  $formData['BIRTH_DATE'] = trim((string)($_POST['BIRTH_DATE'] ?? ''));
-  $formData['INN'] = trim((string)($_POST['INN'] ?? ''));
+  $formData['last_name'] = trim((string)($_POST['last_name'] ?? ''));
+  $formData['first_name'] = trim((string)($_POST['first_name'] ?? ''));
+  $formData['middle_name'] = trim((string)($_POST['middle_name'] ?? ''));
 
-  $postedProcedures = $_POST['PROCEDURES'] ?? [];
-  $postedProcedures = is_array($postedProcedures) ? array_map('intval', $postedProcedures) : [];
+  $procedureIds = $_POST['procedure_ids'] ?? [];
+  $formData['procedure_ids'] = is_array($procedureIds)
+    ? array_values(array_unique(array_filter(array_map('intval', $procedureIds))))
+    : [];
 
-  $formData['PROCEDURES'] = array_values(array_filter(
-    $postedProcedures,
-    static fn(int $id): bool => isset($procedures[$id])
-  ));
+  try {
+    $service = new DoctorService();
 
-  $submitNotice = homework3GetDemoSubmitNotice();
-}
+    if ($doctorId > 0) {
+      $result = $service->update($doctorId, $formData);
+    } else {
+      $result = $service->create($formData);
+    }
 
-$cancelUrl = $isEditMode
-  ? 'doctor_view.php?ID=' . (int)$doctorId
-  : 'index.php';
-
-$selectedProcedureNames = [];
-foreach ($formData['PROCEDURES'] as $procedureId) {
-  if (isset($procedures[$procedureId])) {
-    $selectedProcedureNames[] = $procedures[$procedureId];
+    if ($result['success']) {
+      if ($doctorId > 0) {
+        $successMessage = 'Изменения врача сохранены. ID: ' . $result['id'];
+      } else {
+        $successMessage = 'Врач создан. ID: ' . $result['id'];
+        $formData = [
+          'last_name' => '',
+          'first_name' => '',
+          'middle_name' => '',
+          'procedure_ids' => [],
+        ];
+      }
+    } else {
+      $errors = $result['errors'];
+    }
+  } catch (\Throwable $exception) {
+    $errors[] = $exception->getMessage();
   }
 }
+
+$procedureDialogItems = [];
+$selectedProcedureItems = [];
+
+foreach ($procedures as $procedure) {
+  $procedureId = (int)($procedure['ID'] ?? 0);
+  $procedureName = trim((string)($procedure['NAME'] ?? ''));
+
+  if ($procedureId <= 0 || $procedureName === '') {
+    continue;
+  }
+
+  $item = [
+    'id' => $procedureId,
+    'entityId' => 'procedure',
+    'title' => $procedureName,
+    'tabs' => 'procedures',
+  ];
+
+  $procedureDialogItems[] = $item;
+
+  if (in_array($procedureId, $formData['procedure_ids'], true)) {
+    $selectedProcedureItems[] = $item;
+  }
+}
+
 ?>
 
 <style>
@@ -91,7 +170,6 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
     font-size: 15px;
     line-height: 24px;
     color: #525c69;
-    max-width: 720px;
   }
 
   .doctor-form-card {
@@ -109,76 +187,16 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
     line-height: 20px;
   }
 
-  .doctor-form-notice--info {
-    background: #f0f7ff;
-    border: 1px solid #b9d6f7;
-    color: #1d5f98;
+  .doctor-form-notice--error {
+    background: #fff5f5;
+    border: 1px solid #f3c2c2;
+    color: #b42318;
   }
 
   .doctor-form-notice--success {
     background: #f0fff4;
     border: 1px solid #b7ebc6;
     color: #1f6b38;
-  }
-
-  .doctor-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px 20px;
-  }
-
-  .doctor-form-field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .doctor-form-field--full {
-    grid-column: 1 / -1;
-  }
-
-  .doctor-form-field .ui-ctl {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .doctor-form-label {
-    font-size: 14px;
-    line-height: 20px;
-    font-weight: 600;
-    color: #2f3b47;
-  }
-
-  .doctor-form-hint {
-    font-size: 13px;
-    line-height: 18px;
-    color: #7d8691;
-  }
-
-  .doctor-form-selected {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-  }
-
-  .doctor-form-selected-item {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: #eef2f4;
-    color: #2f3b47;
-    font-size: 13px;
-    line-height: 18px;
-    font-weight: 600;
-  }
-
-  .doctor-form-selected-empty {
-    margin-top: 10px;
-    font-size: 13px;
-    line-height: 18px;
-    color: #7d8691;
   }
 
   .doctor-form-actions {
@@ -188,10 +206,27 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
     margin-top: 24px;
   }
 
-  @media (max-width: 768px) {
-    .doctor-form-grid {
-      grid-template-columns: 1fr;
-    }
+  .doctor-form-actions .ui-btn {
+    margin: 0;
+  }
+
+  .doctor-procedure-selector {
+    padding-top: 6px;
+  }
+
+  .doctor-procedure-help {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 18px;
+    color: #6b7682;
+  }
+
+  .doctor-procedure-empty {
+    padding: 12px 14px;
+    border: 1px dashed #cfd8e0;
+    border-radius: 10px;
+    color: #6b7682;
+    background: #fbfcfd;
   }
 </style>
 
@@ -202,153 +237,179 @@ foreach ($formData['PROCEDURES'] as $procedureId) {
     </h1>
 
     <p class="doctor-form-text">
-      Форма переведена в безопасный демо-режим. Поля даты рождения и ИНН пока
-      оставлены как текстовые заглушки, чтобы страница не падала во время переделки проекта.
+      <?= $isEditMode
+        ? 'На этой странице можно изменить врача и обновить связанные процедуры.'
+        : 'На этой странице можно создать врача и выбрать связанные процедуры через Bitrix TagSelector.' ?>
     </p>
   </div>
 
   <div class="doctor-form-card">
-    <div class="doctor-form-notice doctor-form-notice--info">
-      <?= htmlspecialcharsbx($demoNotice) ?>
-    </div>
-
-    <?php if ($submitNotice !== ''): ?>
+    <?php if ($successMessage !== ''): ?>
       <div class="doctor-form-notice doctor-form-notice--success">
-        <?= htmlspecialcharsbx($submitNotice) ?>
+        <?= htmlspecialcharsbx($successMessage) ?>
       </div>
     <?php endif; ?>
 
-    <form action="" method="post">
+    <?php if (!empty($errors)): ?>
+      <div class="doctor-form-notice doctor-form-notice--error">
+        <?php foreach ($errors as $error): ?>
+          <div><?= htmlspecialcharsbx((string)$error) ?></div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+
+    <form action="<?= htmlspecialcharsbx($formActionUrl) ?>" method="post" id="doctor-form">
       <?= bitrix_sessid_post() ?>
 
-      <?php if ($isEditMode): ?>
+      <?php if ($doctorId > 0): ?>
         <input type="hidden" name="ID" value="<?= $doctorId ?>">
       <?php endif; ?>
 
-      <div class="doctor-form-grid">
-        <div class="doctor-form-field">
-          <label class="doctor-form-label" for="last_name">Фамилия</label>
-          <div class="ui-ctl ui-ctl-textbox">
-            <input
-              type="text"
-              id="last_name"
-              name="LAST_NAME"
-              class="ui-ctl-element"
-              value="<?= htmlspecialcharsbx($formData['LAST_NAME']) ?>"
-              placeholder="Демо: фамилия врача">
+      <div class="ui-form">
+        <div class="ui-form-row">
+          <div class="ui-form-label">
+            <div class="ui-ctl-label-text">Фамилия</div>
           </div>
-        </div>
-
-        <div class="doctor-form-field">
-          <label class="doctor-form-label" for="first_name">Имя</label>
-          <div class="ui-ctl ui-ctl-textbox">
-            <input
-              type="text"
-              id="first_name"
-              name="FIRST_NAME"
-              class="ui-ctl-element"
-              value="<?= htmlspecialcharsbx($formData['FIRST_NAME']) ?>"
-              placeholder="Демо: имя врача">
-          </div>
-        </div>
-
-        <div class="doctor-form-field">
-          <label class="doctor-form-label" for="middle_name">Отчество</label>
-          <div class="ui-ctl ui-ctl-textbox">
-            <input
-              type="text"
-              id="middle_name"
-              name="MIDDLE_NAME"
-              class="ui-ctl-element"
-              value="<?= htmlspecialcharsbx($formData['MIDDLE_NAME']) ?>"
-              placeholder="Демо: отчество врача">
-          </div>
-        </div>
-
-        <div class="doctor-form-field">
-          <label class="doctor-form-label" for="birth_date">Дата рождения</label>
-          <div class="ui-ctl ui-ctl-textbox">
-            <input
-              type="date"
-              id="birth_date"
-              name="BIRTH_DATE"
-              class="ui-ctl-element"
-              value="<?= htmlspecialcharsbx($formData['BIRTH_DATE']) ?>">
-          </div>
-
-          <div class="doctor-form-hint">
-            Временная заглушка. Поле оставлено только для безопасного открытия страницы.
-          </div>
-        </div>
-
-        <div class="doctor-form-field doctor-form-field--full">
-          <label class="doctor-form-label" for="inn">ИНН</label>
-          <div class="ui-ctl ui-ctl-textbox">
-            <input
-              type="text"
-              id="inn"
-              name="INN"
-              class="ui-ctl-element"
-              value="<?= htmlspecialcharsbx($formData['INN']) ?>"
-              placeholder="Временная заглушка, можно не заполнять">
-          </div>
-
-          <div class="doctor-form-hint">
-            Поле временно отключено от реального сохранения и оставлено как демо-текст.
-          </div>
-        </div>
-
-        <div class="doctor-form-field doctor-form-field--full">
-          <label class="doctor-form-label" for="procedures">Процедуры</label>
-
-          <div class="ui-ctl ui-ctl-multiple-select">
-            <select
-              id="procedures"
-              name="PROCEDURES[]"
-              class="ui-ctl-element"
-              multiple
-              size="8">
-              <?php foreach ($procedures as $procedureId => $procedureName): ?>
-                <option
-                  value="<?= (int)$procedureId ?>"
-                  <?= in_array((int)$procedureId, $formData['PROCEDURES'], true) ? 'selected' : '' ?>>
-                  <?= htmlspecialcharsbx($procedureName) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-
-          <div class="doctor-form-hint">
-            Здесь показан демо-список процедур, чтобы верстка формы не была пустой.
-          </div>
-
-          <?php if (!empty($selectedProcedureNames)): ?>
-            <div class="doctor-form-selected">
-              <?php foreach ($selectedProcedureNames as $selectedProcedureName): ?>
-                <span class="doctor-form-selected-item">
-                  <?= htmlspecialcharsbx($selectedProcedureName) ?>
-                </span>
-              <?php endforeach; ?>
+          <div class="ui-form-content">
+            <div class="ui-ctl ui-ctl-textbox ui-ctl-w100">
+              <input
+                type="text"
+                name="last_name"
+                class="ui-ctl-element"
+                value="<?= htmlspecialcharsbx($formData['last_name']) ?>"
+                placeholder="Например: Иванов">
             </div>
-          <?php else: ?>
-            <div class="doctor-form-selected-empty">
-              Пока ни одна процедура не выбрана.
+          </div>
+        </div>
+
+        <div class="ui-form-row">
+          <div class="ui-form-label">
+            <div class="ui-ctl-label-text">Имя</div>
+          </div>
+          <div class="ui-form-content">
+            <div class="ui-ctl ui-ctl-textbox ui-ctl-w100">
+              <input
+                type="text"
+                name="first_name"
+                class="ui-ctl-element"
+                value="<?= htmlspecialcharsbx($formData['first_name']) ?>"
+                placeholder="Например: Иван">
             </div>
-          <?php endif; ?>
+          </div>
+        </div>
+
+        <div class="ui-form-row">
+          <div class="ui-form-label">
+            <div class="ui-ctl-label-text">Отчество</div>
+          </div>
+          <div class="ui-form-content">
+            <div class="ui-ctl ui-ctl-textbox ui-ctl-w100">
+              <input
+                type="text"
+                name="middle_name"
+                class="ui-ctl-element"
+                value="<?= htmlspecialcharsbx($formData['middle_name']) ?>"
+                placeholder="Например: Иванович">
+            </div>
+          </div>
+        </div>
+
+        <div class="ui-form-row">
+          <div class="ui-form-label">
+            <div class="ui-ctl-label-text">Процедуры</div>
+          </div>
+          <div class="ui-form-content">
+            <?php if ($procedureDialogItems === []): ?>
+              <div class="doctor-procedure-empty">Процедуры не найдены.</div>
+            <?php else: ?>
+              <div class="doctor-procedure-selector" id="doctor-procedure-selector"></div>
+              <div class="doctor-procedure-help">
+                Нажми «Добавить» и выбери одну или несколько процедур.
+              </div>
+              <div id="doctor-procedure-inputs"></div>
+            <?php endif; ?>
+          </div>
         </div>
       </div>
 
       <div class="doctor-form-actions">
-        <button type="submit" class="ui-btn ui-btn-success ui-btn-round">
-          <span class="ui-btn-text">Проверить форму</span>
+        <button
+          type="submit"
+          class="ui-btn ui-btn-success ui-btn-round">
+          <span class="ui-btn-text">
+            <?= $isEditMode ? 'Сохранить изменения' : 'Сохранить' ?>
+          </span>
         </button>
 
-        <a href="<?= htmlspecialcharsbx($cancelUrl) ?>" class="ui-btn ui-btn-light-border ui-btn-round">
+        <a
+          href="<?= htmlspecialcharsbx($cancelUrl) ?>"
+          class="ui-btn ui-btn-light-border ui-btn-round">
           <span class="ui-btn-text">Назад</span>
         </a>
       </div>
     </form>
   </div>
 </div>
+
+<?php if ($procedureDialogItems !== []): ?>
+  <script>
+    BX.ready(function() {
+      const dialogItems = <?= \CUtil::PhpToJSObject($procedureDialogItems) ?>;
+      const selectedItems = <?= \CUtil::PhpToJSObject($selectedProcedureItems) ?>;
+      const hiddenInputsContainer = document.getElementById('doctor-procedure-inputs');
+      const selectorContainer = document.getElementById('doctor-procedure-selector');
+
+      const syncProcedureInputs = function(selector) {
+        hiddenInputsContainer.innerHTML = '';
+
+        selector.getTags().forEach(function(tag) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'procedure_ids[]';
+          input.value = tag.getId();
+          hiddenInputsContainer.appendChild(input);
+        });
+      };
+
+      const procedureSelector = new BX.UI.EntitySelector.TagSelector({
+        id: 'doctor-procedure-tag-selector',
+        multiple: true,
+        textBoxAutoHide: true,
+        textBoxWidth: 320,
+        maxHeight: 140,
+        placeholder: 'Выберите процедуры',
+        addButtonCaption: 'Добавить',
+        addButtonCaptionMore: 'Добавить еще',
+        items: selectedItems,
+        dialogOptions: {
+          id: 'doctor-procedure-dialog',
+          context: 'homework3-doctor-procedure-selector',
+          multiple: true,
+          dropdownMode: true,
+          enableSearch: true,
+          width: 520,
+          showAvatars: false,
+          tabs: [{
+            id: 'procedures',
+            title: 'Процедуры'
+          }],
+          items: dialogItems,
+          selectedItems: selectedItems
+        },
+        events: {
+          onAfterTagAdd: function(event) {
+            syncProcedureInputs(event.getTarget());
+          },
+          onAfterTagRemove: function(event) {
+            syncProcedureInputs(event.getTarget());
+          }
+        }
+      });
+
+      procedureSelector.renderTo(selectorContainer);
+      syncProcedureInputs(procedureSelector);
+    });
+  </script>
+<?php endif; ?>
 
 <?php require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/footer.php'); ?>

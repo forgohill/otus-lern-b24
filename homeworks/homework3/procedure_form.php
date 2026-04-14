@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Clinic\ProcedureRepository;
+use App\Clinic\ProcedureService;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
-use App\Clinic\ProcedureRepository;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
-require __DIR__ . '/demo_data.php';
 
 $APPLICATION->SetTitle('Форма процедуры');
 
@@ -26,18 +26,53 @@ $formData = [
   'description' => '',
 ];
 
-$existingProcedures = homework3GetProcedureRows();
-$demoNotice = homework3GetDemoNotice();
-$submitNotice = '';
-
+$errors = [];
+$successMessage = '';
 $cancelUrl = 'index.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
-  $formData['name'] = trim((string)($_POST['name'] ?? ''));
-  $formData['description'] = trim((string)($_POST['description'] ?? ''));
-  $submitNotice = homework3GetDemoSubmitNotice();
+  $action = (string)($_POST['action'] ?? '');
+
+  try {
+    $service = new ProcedureService();
+
+    if ($action === 'save') {
+      $formData['name'] = trim((string)($_POST['name'] ?? ''));
+      $formData['description'] = trim((string)($_POST['description'] ?? ''));
+
+      $result = $service->create($formData);
+
+      if ($result['success']) {
+        $successMessage = 'Процедура создана. ID: ' . $result['id'];
+        $formData = [
+          'name' => '',
+          'description' => '',
+        ];
+      } else {
+        $errors = $result['errors'];
+      }
+    } elseif ($action === 'delete') {
+      $procedureId = (int)($_POST['procedure_id'] ?? 0);
+      $result = $service->delete($procedureId);
+
+      if ($result['success']) {
+        $successMessage = 'Процедура удалена. ID: ' . $procedureId;
+      } else {
+        $errors = $result['errors'];
+      }
+    }
+  } catch (\Throwable $exception) {
+    $errors[] = $exception->getMessage();
+  }
 }
 
+try {
+  $procedureRepository = new ProcedureRepository();
+  $existingProcedures = $procedureRepository->getList();
+} catch (\Throwable $exception) {
+  $existingProcedures = [];
+  $errors[] = $exception->getMessage();
+}
 
 ?>
 
@@ -91,10 +126,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     line-height: 20px;
   }
 
-  .procedure-form-notice--info {
-    background: #f0f7ff;
-    border: 1px solid #b9d6f7;
-    color: #1d5f98;
+  .procedure-form-notice--error {
+    background: #fff5f5;
+    border: 1px solid #f3c2c2;
+    color: #b42318;
   }
 
   .procedure-form-notice--success {
@@ -160,11 +195,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
 
   .procedure-existing-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    padding: 6px 20px 6px 12px;
-    min-height: 32px;
+    padding: 12px 20px 12px 12px;
     border-bottom: 1px solid #eef2f4;
   }
 
@@ -172,11 +206,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     border-bottom: none;
   }
 
-  .procedure-existing-name {
+  .procedure-existing-content {
     min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .procedure-existing-name {
+    display: block;
+    margin-bottom: 4px;
     font-size: 14px;
     line-height: 22px;
+    font-weight: 600;
     color: #2f3b47;
+  }
+
+  .procedure-existing-description {
+    font-size: 13px;
+    line-height: 20px;
+    color: #6b7682;
+    word-break: break-word;
+  }
+
+  .procedure-delete-form {
+    margin: 0;
   }
 
   .procedure-delete-btn {
@@ -190,9 +242,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     border-radius: 8px;
     background: transparent;
     color: #7d8691;
-    opacity: 0.45;
-    cursor: not-allowed;
+    cursor: pointer;
     flex: 0 0 32px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .procedure-delete-btn:hover {
+    background: #fff1f1;
+    color: #d64545;
   }
 
   .procedure-delete-btn .ui-icon-set {
@@ -206,19 +263,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     <h1 class="procedure-form-title">Добавление процедуры</h1>
 
     <p class="procedure-form-text">
-      Форма процедуры тоже временно переведена в демо-режим. Она нужна как текстовая
-      заглушка, чтобы страница открывалась без связки с инфоблоком и сервисами сохранения.
+      На этой странице можно добавить новую процедуру и сразу увидеть текущий список процедур из инфоблока.
     </p>
   </div>
 
   <div class="procedure-form-card">
-    <div class="procedure-form-notice procedure-form-notice--info">
-      <?= htmlspecialcharsbx($demoNotice) ?>
-    </div>
-
-    <?php if ($submitNotice !== ''): ?>
+    <?php if ($successMessage !== ''): ?>
       <div class="procedure-form-notice procedure-form-notice--success">
-        <?= htmlspecialcharsbx($submitNotice) ?>
+        <?= htmlspecialcharsbx($successMessage) ?>
+      </div>
+    <?php endif; ?>
+
+    <?php if (!empty($errors)): ?>
+      <div class="procedure-form-notice procedure-form-notice--error">
+        <?php foreach ($errors as $error): ?>
+          <div><?= htmlspecialcharsbx((string)$error) ?></div>
+        <?php endforeach; ?>
       </div>
     <?php endif; ?>
 
@@ -238,7 +298,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
                 name="name"
                 class="ui-ctl-element"
                 value="<?= htmlspecialcharsbx($formData['name']) ?>"
-                placeholder="Демо: название процедуры">
+                placeholder="Например: Первичный осмотр">
             </div>
           </div>
         </div>
@@ -254,7 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
                 name="description"
                 class="ui-ctl-element"
                 rows="6"
-                placeholder="Демо: краткое описание процедуры"><?= htmlspecialcharsbx($formData['description']) ?></textarea>
+                placeholder="Краткое описание процедуры"><?= htmlspecialcharsbx($formData['description']) ?></textarea>
             </div>
           </div>
         </div>
@@ -266,7 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
           name="action"
           value="save"
           class="ui-btn ui-btn-success ui-btn-round">
-          <span class="ui-btn-text">Проверить форму</span>
+          <span class="ui-btn-text">Сохранить</span>
         </button>
 
         <a
@@ -278,28 +338,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     </form>
 
     <div class="procedure-existing-block">
-      <h2 class="procedure-existing-title">Демо-список процедур</h2>
+      <h2 class="procedure-existing-title">Список процедур</h2>
 
       <p class="procedure-existing-text">
-        Ниже показаны временные записи-заглушки, чтобы правая часть страницы не была пустой.
+        Ниже показаны процедуры, которые уже есть в инфоблоке.
       </p>
 
       <div class="procedure-existing-scroll">
         <ul class="procedure-existing-list">
           <?php foreach ($existingProcedures as $procedure): ?>
             <li class="procedure-existing-item">
-              <span class="procedure-existing-name">
-                <?= htmlspecialcharsbx((string)($procedure['name'] ?? '')) ?>
-              </span>
+              <div class="procedure-existing-content">
+                <span class="procedure-existing-name">
+                  <?= htmlspecialcharsbx((string)($procedure['NAME'] ?? '')) ?>
+                </span>
 
-              <button
-                type="button"
-                class="procedure-delete-btn"
-                title="Демо-режим"
-                aria-label="Демо-режим"
-                disabled>
-                <div class="ui-icon-set --trash-bin"></div>
-              </button>
+                <div class="procedure-existing-description">
+                  <?= htmlspecialcharsbx((string)($procedure['DESCRIPTION'] ?? '')) ?>
+                </div>
+              </div>
+
+              <form
+                action=""
+                method="post"
+                class="procedure-delete-form"
+                onsubmit="return confirm('Удалить процедуру?');">
+                <?= bitrix_sessid_post() ?>
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="procedure_id" value="<?= (int)($procedure['ID'] ?? 0) ?>">
+
+                <button
+                  type="submit"
+                  class="procedure-delete-btn"
+                  title="Удалить процедуру"
+                  aria-label="Удалить процедуру">
+                  <div class="ui-icon-set --trash-bin"></div>
+                </button>
+              </form>
             </li>
           <?php endforeach; ?>
         </ul>

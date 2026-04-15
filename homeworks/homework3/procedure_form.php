@@ -28,7 +28,7 @@ function homework3ProcedureFormSubmit(string $action, array $formData, int $proc
 {
   $service = new ProcedureService();
 
-  if ($action === 'save') {
+  if ($action === 'save' || $action === 'save_and_add_more') {
     $result = $service->create($formData);
 
     if (!($result['success'] ?? false)) {
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
   $action = (string)($_POST['action'] ?? '');
   $procedureId = (int)($_POST['procedure_id'] ?? 0);
 
-  if ($action === 'save') {
+  if ($action === 'save' || $action === 'save_and_add_more') {
     $formData = homework3ProcedureFormCreateRequestData($_POST);
   }
 
@@ -118,6 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     $errors = $submitResult['errors'];
     $successMessage = $submitResult['successMessage'];
     $formData = $submitResult['formData'];
+
+    if ($action === 'save' && $errors === []) {
+      LocalRedirect($cancelUrl);
+      exit;
+    }
   } catch (\Throwable $exception) {
     $errors[] = $exception->getMessage();
   }
@@ -206,6 +211,19 @@ $APPLICATION->SetTitle($pageTitle);
 
   .procedure-form-actions .ui-btn {
     margin: 0;
+  }
+
+  .procedure-form-save-more-btn {
+    color: #7d8691;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .procedure-form-save-more-btn:hover,
+  .procedure-form-save-more-btn:focus {
+    background-color: #bbed21 !important;
+    border-color: #bbed21 !important;
+    color: #1f2d3d !important;
+    box-shadow: 0 6px 18px rgba(187, 237, 33, 0.28);
   }
 
   .ui-form {
@@ -386,6 +404,14 @@ $APPLICATION->SetTitle($pageTitle);
           value="save"
           class="ui-btn ui-btn-success ui-btn-round">
           <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_BUTTON_SAVE')) ?></span>
+        </button>
+
+        <button
+          type="submit"
+          name="action"
+          value="save_and_add_more"
+          class="ui-btn ui-btn-light-border ui-btn-round procedure-form-save-more-btn">
+          <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_BUTTON_SAVE_AND_ADD_MORE')) ?></span>
         </button>
 
         <a

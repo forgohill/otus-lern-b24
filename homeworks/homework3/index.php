@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Clinic\DoctorService;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\UI\Extension;
@@ -23,9 +24,38 @@ Extension::load([
 $addDoctorUrl = 'doctor_form.php';
 $addProcedureUrl = 'procedure_form.php';
 
+$errors = [];
+$doctors = [];
 $doctorRepository = new \App\Clinic\DoctorRepository();
 
-$doctors = $doctorRepository->getList();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
+  $action = (string)($_POST['action'] ?? '');
+  $doctorId = (int)($_POST['doctor_id'] ?? 0);
+
+  if ($action === 'delete') {
+    try {
+      $doctorService = new DoctorService();
+      $deleteResult = $doctorService->delete($doctorId);
+
+      if (!($deleteResult['success'] ?? false)) {
+        $errors = is_array($deleteResult['errors'] ?? null)
+          ? $deleteResult['errors']
+          : [(string)Loc::getMessage('CLINIC_INDEX_DOCTOR_DELETE_ERROR')];
+      } else {
+        LocalRedirect('index.php');
+        exit;
+      }
+    } catch (\Throwable $exception) {
+      $errors[] = $exception->getMessage();
+    }
+  }
+}
+
+try {
+  $doctors = $doctorRepository->getList();
+} catch (\Throwable $exception) {
+  $errors[] = $exception->getMessage();
+}
 ?>
 
 <style>
@@ -216,8 +246,18 @@ $doctors = $doctorRepository->getList();
   .doctor-card-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
     margin-top: auto;
+    justify-content: space-between;
+  }
+
+  .doctor-card-delete-form {
+    margin: 0;
+  }
+
+  .doctor-card-redact-btn {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .doctor-card-icon-btn {
@@ -225,6 +265,8 @@ $doctors = $doctorRepository->getList();
     padding-left: 0;
     padding-right: 0;
     justify-content: center;
+    color: #7d8691;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   }
 
   .doctor-card-icon-btn .ui-btn-text {
@@ -235,6 +277,14 @@ $doctors = $doctorRepository->getList();
 
   .doctor-card-icon {
     --ui-icon-set__icon-size: 16px;
+  }
+
+  .doctor-card-icon-btn--delete:hover,
+  .doctor-card-icon-btn--delete:focus {
+    background-color: #ff5752 !important;
+    border-color: #ff5752 !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(255, 87, 82, 0.22);
   }
 
   .doctor-card--add {
@@ -280,6 +330,20 @@ $doctors = $doctorRepository->getList();
     padding: 24px;
     background: #fbfcfd;
     margin-bottom: 16px;
+  }
+
+  .homework-notice {
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .homework-notice--error {
+    background: #fff5f5;
+    border: 1px solid #f3c2c2;
+    color: #b42318;
   }
 
   @media (max-width: 768px) {
@@ -372,9 +436,18 @@ $doctors = $doctorRepository->getList();
 
   <div class="homework-section" id="doctors">
     <div class="homework-section-body">
+      <?php if (!empty($errors)): ?>
+        <div class="homework-notice homework-notice--error">
+          <?php foreach ($errors as $error): ?>
+            <div><?= htmlspecialcharsbx((string)$error) ?></div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
       <div class="homework-cards">
         <?php foreach ($doctors as $doctor): ?>
           <?php
+          $doctorId = (int)($doctor['id'] ?? 0);
           $doctorViewUrl = 'doctor_view.php?ID=' . (int)($doctor['id'] ?? 0);
           $doctorEditUrl = 'doctor_form.php?ID=' . (int)($doctor['id'] ?? 0);
           $doctorFullName = trim((string)($doctor['full_name'] ?? ''));
@@ -393,16 +466,38 @@ $doctors = $doctorRepository->getList();
               <a href="<?= htmlspecialcharsbx($doctorViewUrl) ?>" class="ui-btn ui-btn-light-border ui-btn-round">
                 <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_VIEW')) ?></span>
               </a>
+              <div class="doctor-card-redact-btn">
+                <a
+                  href="<?= htmlspecialcharsbx($doctorEditUrl) ?>"
+                  class="ui-btn ui-btn-light-border ui-btn-round doctor-card-icon-btn"
+                  title="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_EDIT_TITLE')) ?>"
+                  aria-label="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_EDIT_TITLE')) ?>">
+                  <span class="ui-btn-text">
+                    <div class="ui-icon-set --edit-pencil doctor-card-icon"></div>
+                  </span>
+                </a>
 
-              <a
-                href="<?= htmlspecialcharsbx($doctorEditUrl) ?>"
-                class="ui-btn ui-btn-light-border ui-btn-round doctor-card-icon-btn"
-                title="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_EDIT_TITLE')) ?>"
-                aria-label="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_EDIT_TITLE')) ?>">
-                <span class="ui-btn-text">
-                  <div class="ui-icon-set --edit-pencil doctor-card-icon"></div>
-                </span>
-              </a>
+                <form
+                  action=""
+                  method="post"
+                  class="doctor-card-delete-form"
+                  onsubmit="return confirm('<?= \CUtil::JSEscape((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_DELETE_CONFIRM')) ?>');">
+                  <?= bitrix_sessid_post() ?>
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="doctor_id" value="<?= $doctorId ?>">
+
+                  <button
+                    type="submit"
+                    class="ui-btn ui-btn-light-border ui-btn-round doctor-card-icon-btn doctor-card-icon-btn--delete"
+                    title="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_DELETE_TITLE')) ?>"
+                    aria-label="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DOCTOR_DELETE_TITLE')) ?>">
+                    <span class="ui-btn-text">
+                      <div class="ui-icon-set --trash-bin doctor-card-icon"></div>
+                    </span>
+                  </button>
+                </form>
+
+              </div>
             </div>
           </div>
         <?php endforeach; ?>

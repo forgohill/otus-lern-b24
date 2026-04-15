@@ -146,7 +146,6 @@ Extension::load([
 
 $errors = [];
 $successMessage = '';
-$cancelUrl = 'index.php';
 $formData = homework3DoctorFormCreateDefaults();
 $procedures = [];
 
@@ -185,6 +184,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
   }
 }
 
+$cancelUrl = $isEditMode
+  ? 'doctor_view.php?ID=' . $doctorId
+  : 'index.php';
 $formActionUrl = 'doctor_form.php' . ($isEditMode ? '?ID=' . $doctorId : '');
 $pageTitle = $isEditMode
   ? (string)Loc::getMessage('CLINIC_DOCTOR_FORM_TITLE_EDIT')

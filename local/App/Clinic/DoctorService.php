@@ -269,7 +269,7 @@ class DoctorService
     $doctor->set(ClinicConfig::DOCTOR_FIRST_NAME, $doctorData['first_name']);
     $doctor->set(
       ClinicConfig::DOCTOR_MIDDLE_NAME,
-      $doctorData['middle_name'] !== '' ? $doctorData['middle_name'] : null
+      $doctorData['middle_name']
     );
   }
 

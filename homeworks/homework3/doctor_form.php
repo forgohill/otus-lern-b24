@@ -6,14 +6,133 @@ use App\Clinic\DoctorRepository;
 use App\Clinic\DoctorService;
 use App\Clinic\ProcedureRepository;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\UI\Extension;
+use Bitrix\Main\Web\Json;
+
+function homework3DoctorFormCreateDefaults(): array
+{
+  return [
+    'last_name' => '',
+    'first_name' => '',
+    'middle_name' => '',
+    'procedure_ids' => [],
+  ];
+}
+
+function homework3DoctorFormNormalizeProcedureIds(mixed $procedureIds): array
+{
+  if (!is_array($procedureIds)) {
+    return [];
+  }
+
+  return array_values(array_unique(array_filter(
+    array_map('intval', $procedureIds),
+    static fn(int $procedureId): bool => $procedureId > 0
+  )));
+}
+
+function homework3DoctorFormCreateRequestData(array $request): array
+{
+  return [
+    'last_name' => trim((string)($request['last_name'] ?? '')),
+    'first_name' => trim((string)($request['first_name'] ?? '')),
+    'middle_name' => trim((string)($request['middle_name'] ?? '')),
+    'procedure_ids' => homework3DoctorFormNormalizeProcedureIds($request['procedure_ids'] ?? []),
+  ];
+}
+
+function homework3DoctorFormCreateDoctorData(array $doctor): array
+{
+  return [
+    'last_name' => (string)($doctor['last_name'] ?? ''),
+    'first_name' => (string)($doctor['first_name'] ?? ''),
+    'middle_name' => (string)($doctor['middle_name'] ?? ''),
+    'procedure_ids' => is_array($doctor['procedure_ids'] ?? null)
+      ? homework3DoctorFormNormalizeProcedureIds($doctor['procedure_ids'])
+      : [],
+  ];
+}
+
+function homework3DoctorFormLoadProcedures(): array
+{
+  $procedureRepository = new ProcedureRepository();
+
+  return $procedureRepository->getList();
+}
+
+function homework3DoctorFormLoadDoctor(int $doctorId): ?array
+{
+  $doctorRepository = new DoctorRepository();
+
+  return $doctorRepository->getById($doctorId);
+}
+
+function homework3DoctorFormSubmit(int $doctorId, array $formData): array
+{
+  $service = new DoctorService();
+  $result = $doctorId > 0
+    ? $service->update($doctorId, $formData)
+    : $service->create($formData);
+
+  if (!($result['success'] ?? false)) {
+    return [
+      'errors' => is_array($result['errors'] ?? null)
+        ? $result['errors']
+        : [(string)Loc::getMessage('CLINIC_DOCTOR_FORM_SAVE_ERROR')],
+      'successMessage' => '',
+      'formData' => $formData,
+    ];
+  }
+
+  return [
+    'errors' => [],
+    'successMessage' => $doctorId > 0
+      ? (string)Loc::getMessage('CLINIC_DOCTOR_FORM_SUCCESS_UPDATED', ['#ID#' => (string)$result['id']])
+      : (string)Loc::getMessage('CLINIC_DOCTOR_FORM_SUCCESS_CREATED', ['#ID#' => (string)$result['id']]),
+    'formData' => $doctorId > 0 ? $formData : homework3DoctorFormCreateDefaults(),
+  ];
+}
+
+function homework3DoctorFormBuildProcedureSelectorData(array $procedures, array $selectedProcedureIds): array
+{
+  $dialogItems = [];
+  $selectedItems = [];
+
+  foreach ($procedures as $procedure) {
+    $procedureId = (int)($procedure['ID'] ?? 0);
+    $procedureName = trim((string)($procedure['NAME'] ?? ''));
+
+    if ($procedureId <= 0 || $procedureName === '') {
+      continue;
+    }
+
+    $item = [
+      'id' => $procedureId,
+      'entityId' => 'procedure',
+      'title' => $procedureName,
+      'tabs' => 'procedures',
+    ];
+
+    $dialogItems[] = $item;
+
+    if (in_array($procedureId, $selectedProcedureIds, true)) {
+      $selectedItems[] = $item;
+    }
+  }
+
+  return [
+    'dialogItems' => $dialogItems,
+    'selectedItems' => $selectedItems,
+  ];
+}
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
 
+Loc::loadMessages(__FILE__);
+
 $doctorId = isset($_GET['ID']) ? (int)$_GET['ID'] : (int)($_POST['ID'] ?? 0);
 $isEditMode = $doctorId > 0;
-
-$APPLICATION->SetTitle($isEditMode ? 'Редактирование врача' : 'Форма врача');
 
 Loader::includeModule('ui');
 
@@ -25,116 +144,65 @@ Extension::load([
   'ui.entity-selector',
 ]);
 
-$formData = [
-  'last_name' => '',
-  'first_name' => '',
-  'middle_name' => '',
-  'procedure_ids' => [],
-];
-
 $errors = [];
 $successMessage = '';
 $cancelUrl = 'index.php';
-$formActionUrl = 'doctor_form.php' . ($isEditMode ? '?ID=' . $doctorId : '');
+$formData = homework3DoctorFormCreateDefaults();
+$procedures = [];
 
 try {
-  $procedureRepository = new ProcedureRepository();
-  $procedures = $procedureRepository->getList();
+  $procedures = homework3DoctorFormLoadProcedures();
 } catch (\Throwable $exception) {
-  $procedures = [];
   $errors[] = $exception->getMessage();
 }
 
-try {
-  $doctorRepository = new DoctorRepository();
-
-  if ($isEditMode && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $doctor = $doctorRepository->getById($doctorId);
+if ($isEditMode && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+  try {
+    $doctor = homework3DoctorFormLoadDoctor($doctorId);
 
     if ($doctor === null) {
-      $errors[] = 'Врач не найден';
-      $isEditMode = false;
+      $errors[] = (string)Loc::getMessage('CLINIC_DOCTOR_FORM_DOCTOR_NOT_FOUND');
       $doctorId = 0;
-      $formActionUrl = 'doctor_form.php';
-      $APPLICATION->SetTitle('Форма врача');
+      $isEditMode = false;
     } else {
-      $formData = [
-        'last_name' => (string)($doctor['LAST_NAME'] ?? ''),
-        'first_name' => (string)($doctor['FIRST_NAME'] ?? ''),
-        'middle_name' => (string)($doctor['MIDDLE_NAME'] ?? ''),
-        'procedure_ids' => is_array($doctor['PROCEDURE_IDS'] ?? null)
-          ? $doctor['PROCEDURE_IDS']
-          : [],
-      ];
-    }
-  }
-} catch (\Throwable $exception) {
-  $errors[] = $exception->getMessage();
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
-  $formData['last_name'] = trim((string)($_POST['last_name'] ?? ''));
-  $formData['first_name'] = trim((string)($_POST['first_name'] ?? ''));
-  $formData['middle_name'] = trim((string)($_POST['middle_name'] ?? ''));
-
-  $procedureIds = $_POST['procedure_ids'] ?? [];
-  $formData['procedure_ids'] = is_array($procedureIds)
-    ? array_values(array_unique(array_filter(array_map('intval', $procedureIds))))
-    : [];
-
-  try {
-    $service = new DoctorService();
-
-    if ($doctorId > 0) {
-      $result = $service->update($doctorId, $formData);
-    } else {
-      $result = $service->create($formData);
-    }
-
-    if ($result['success']) {
-      if ($doctorId > 0) {
-        $successMessage = 'Изменения врача сохранены. ID: ' . $result['id'];
-      } else {
-        $successMessage = 'Врач создан. ID: ' . $result['id'];
-        $formData = [
-          'last_name' => '',
-          'first_name' => '',
-          'middle_name' => '',
-          'procedure_ids' => [],
-        ];
-      }
-    } else {
-      $errors = $result['errors'];
+      $formData = homework3DoctorFormCreateDoctorData($doctor);
     }
   } catch (\Throwable $exception) {
     $errors[] = $exception->getMessage();
   }
 }
 
-$procedureDialogItems = [];
-$selectedProcedureItems = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
+  $formData = homework3DoctorFormCreateRequestData($_POST);
 
-foreach ($procedures as $procedure) {
-  $procedureId = (int)($procedure['ID'] ?? 0);
-  $procedureName = trim((string)($procedure['NAME'] ?? ''));
-
-  if ($procedureId <= 0 || $procedureName === '') {
-    continue;
-  }
-
-  $item = [
-    'id' => $procedureId,
-    'entityId' => 'procedure',
-    'title' => $procedureName,
-    'tabs' => 'procedures',
-  ];
-
-  $procedureDialogItems[] = $item;
-
-  if (in_array($procedureId, $formData['procedure_ids'], true)) {
-    $selectedProcedureItems[] = $item;
+  try {
+    $submitResult = homework3DoctorFormSubmit($doctorId, $formData);
+    $errors = $submitResult['errors'];
+    $successMessage = $submitResult['successMessage'];
+    $formData = $submitResult['formData'];
+  } catch (\Throwable $exception) {
+    $errors[] = $exception->getMessage();
   }
 }
+
+$formActionUrl = 'doctor_form.php' . ($isEditMode ? '?ID=' . $doctorId : '');
+$pageTitle = $isEditMode
+  ? (string)Loc::getMessage('CLINIC_DOCTOR_FORM_TITLE_EDIT')
+  : (string)Loc::getMessage('CLINIC_DOCTOR_FORM_TITLE_CREATE');
+$pageHeading = $isEditMode
+  ? (string)Loc::getMessage('CLINIC_DOCTOR_FORM_HEADING_EDIT')
+  : (string)Loc::getMessage('CLINIC_DOCTOR_FORM_HEADING_CREATE');
+$pageDescription = $isEditMode
+  ? (string)Loc::getMessage('CLINIC_DOCTOR_FORM_DESCRIPTION_EDIT')
+  : (string)Loc::getMessage('CLINIC_DOCTOR_FORM_DESCRIPTION_CREATE');
+$APPLICATION->SetTitle($pageTitle);
+
+$procedureSelectorData = homework3DoctorFormBuildProcedureSelectorData(
+  $procedures,
+  $formData['procedure_ids']
+);
+$procedureDialogItems = $procedureSelectorData['dialogItems'];
+$selectedProcedureItems = $procedureSelectorData['selectedItems'];
 
 ?>
 
@@ -233,13 +301,11 @@ foreach ($procedures as $procedure) {
 <div class="doctor-form-page">
   <div class="doctor-form-hero">
     <h1 class="doctor-form-title">
-      <?= $isEditMode ? 'Редактирование врача' : 'Добавление врача' ?>
+      <?= htmlspecialcharsbx($pageHeading) ?>
     </h1>
 
     <p class="doctor-form-text">
-      <?= $isEditMode
-        ? 'На этой странице можно изменить врача и обновить связанные процедуры.'
-        : 'На этой странице можно создать врача и выбрать связанные процедуры через Bitrix TagSelector.' ?>
+      <?= htmlspecialcharsbx($pageDescription) ?>
     </p>
   </div>
 
@@ -268,7 +334,7 @@ foreach ($procedures as $procedure) {
       <div class="ui-form">
         <div class="ui-form-row">
           <div class="ui-form-label">
-            <div class="ui-ctl-label-text">Фамилия</div>
+            <div class="ui-ctl-label-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_FIELD_LAST_NAME')) ?></div>
           </div>
           <div class="ui-form-content">
             <div class="ui-ctl ui-ctl-textbox ui-ctl-w100">
@@ -277,14 +343,14 @@ foreach ($procedures as $procedure) {
                 name="last_name"
                 class="ui-ctl-element"
                 value="<?= htmlspecialcharsbx($formData['last_name']) ?>"
-                placeholder="Например: Иванов">
+                placeholder="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_PLACEHOLDER_LAST_NAME')) ?>">
             </div>
           </div>
         </div>
 
         <div class="ui-form-row">
           <div class="ui-form-label">
-            <div class="ui-ctl-label-text">Имя</div>
+            <div class="ui-ctl-label-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_FIELD_FIRST_NAME')) ?></div>
           </div>
           <div class="ui-form-content">
             <div class="ui-ctl ui-ctl-textbox ui-ctl-w100">
@@ -293,14 +359,14 @@ foreach ($procedures as $procedure) {
                 name="first_name"
                 class="ui-ctl-element"
                 value="<?= htmlspecialcharsbx($formData['first_name']) ?>"
-                placeholder="Например: Иван">
+                placeholder="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_PLACEHOLDER_FIRST_NAME')) ?>">
             </div>
           </div>
         </div>
 
         <div class="ui-form-row">
           <div class="ui-form-label">
-            <div class="ui-ctl-label-text">Отчество</div>
+            <div class="ui-ctl-label-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_FIELD_MIDDLE_NAME')) ?></div>
           </div>
           <div class="ui-form-content">
             <div class="ui-ctl ui-ctl-textbox ui-ctl-w100">
@@ -309,22 +375,22 @@ foreach ($procedures as $procedure) {
                 name="middle_name"
                 class="ui-ctl-element"
                 value="<?= htmlspecialcharsbx($formData['middle_name']) ?>"
-                placeholder="Например: Иванович">
+                placeholder="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_PLACEHOLDER_MIDDLE_NAME')) ?>">
             </div>
           </div>
         </div>
 
         <div class="ui-form-row">
           <div class="ui-form-label">
-            <div class="ui-ctl-label-text">Процедуры</div>
+            <div class="ui-ctl-label-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_FIELD_PROCEDURES')) ?></div>
           </div>
           <div class="ui-form-content">
             <?php if ($procedureDialogItems === []): ?>
-              <div class="doctor-procedure-empty">Процедуры не найдены.</div>
+              <div class="doctor-procedure-empty"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_PROCEDURES_EMPTY')) ?></div>
             <?php else: ?>
               <div class="doctor-procedure-selector" id="doctor-procedure-selector"></div>
               <div class="doctor-procedure-help">
-                Нажми «Добавить» и выбери одну или несколько процедур.
+                <?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_PROCEDURES_HELP')) ?>
               </div>
               <div id="doctor-procedure-inputs"></div>
             <?php endif; ?>
@@ -337,14 +403,16 @@ foreach ($procedures as $procedure) {
           type="submit"
           class="ui-btn ui-btn-success ui-btn-round">
           <span class="ui-btn-text">
-            <?= $isEditMode ? 'Сохранить изменения' : 'Сохранить' ?>
+            <?= htmlspecialcharsbx($isEditMode
+              ? (string)Loc::getMessage('CLINIC_DOCTOR_FORM_BUTTON_SAVE_CHANGES')
+              : (string)Loc::getMessage('CLINIC_DOCTOR_FORM_BUTTON_SAVE')) ?>
           </span>
         </button>
 
         <a
           href="<?= htmlspecialcharsbx($cancelUrl) ?>"
           class="ui-btn ui-btn-light-border ui-btn-round">
-          <span class="ui-btn-text">Назад</span>
+          <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_BUTTON_BACK')) ?></span>
         </a>
       </div>
     </form>
@@ -354,8 +422,10 @@ foreach ($procedures as $procedure) {
 <?php if ($procedureDialogItems !== []): ?>
   <script>
     BX.ready(function() {
-      const dialogItems = <?= \CUtil::PhpToJSObject($procedureDialogItems) ?>;
-      const selectedItems = <?= \CUtil::PhpToJSObject($selectedProcedureItems) ?>;
+
+      const dialogItems = <?= Json::encode($procedureDialogItems) ?>;
+      const selectedItems = <?= Json::encode($selectedProcedureItems) ?>;
+
       const hiddenInputsContainer = document.getElementById('doctor-procedure-inputs');
       const selectorContainer = document.getElementById('doctor-procedure-selector');
 
@@ -377,9 +447,9 @@ foreach ($procedures as $procedure) {
         textBoxAutoHide: true,
         textBoxWidth: 320,
         maxHeight: 140,
-        placeholder: 'Выберите процедуры',
-        addButtonCaption: 'Добавить',
-        addButtonCaptionMore: 'Добавить еще',
+        placeholder: <?= Json::encode((string)Loc::getMessage('CLINIC_DOCTOR_FORM_SELECTOR_PLACEHOLDER')) ?>,
+        addButtonCaption: <?= Json::encode((string)Loc::getMessage('CLINIC_DOCTOR_FORM_SELECTOR_ADD')) ?>,
+        addButtonCaptionMore: <?= Json::encode((string)Loc::getMessage('CLINIC_DOCTOR_FORM_SELECTOR_ADD_MORE')) ?>,
         items: selectedItems,
         dialogOptions: {
           id: 'doctor-procedure-dialog',
@@ -391,7 +461,7 @@ foreach ($procedures as $procedure) {
           showAvatars: false,
           tabs: [{
             id: 'procedures',
-            title: 'Процедуры'
+            title: <?= Json::encode((string)Loc::getMessage('CLINIC_DOCTOR_FORM_SELECTOR_TAB_PROCEDURES')) ?>
           }],
           items: dialogItems,
           selectedItems: selectedItems

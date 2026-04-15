@@ -3,11 +3,14 @@
 declare(strict_types=1);
 
 use App\Clinic\DoctorRepository;
-use Bitrix\Iblock\Elements\ElementDoctorsTable;
+use App\Clinic\DoctorService;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\UI\Extension;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
+
+Loc::loadMessages(__FILE__);
 
 Loader::includeModule('ui');
 
@@ -29,18 +32,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
 
   if ($action === 'delete') {
     try {
-      if ($doctorId <= 0) {
-        throw new \RuntimeException('Не передан ID врача');
-      }
+      $doctorService = new DoctorService();
+      $deleteResult = $doctorService->delete($doctorId);
 
-      if (!Loader::includeModule('iblock')) {
-        throw new \RuntimeException('Модуль iblock не подключен');
-      }
-
-      $deleteResult = ElementDoctorsTable::delete($doctorId);
-
-      if (!$deleteResult->isSuccess()) {
-        $errors = $deleteResult->getErrorMessages();
+      if (!($deleteResult['success'] ?? false)) {
+        $errors = is_array($deleteResult['errors'] ?? null)
+          ? $deleteResult['errors']
+          : [(string)Loc::getMessage('CLINIC_DOCTOR_VIEW_DELETE_ERROR')];
       } else {
         LocalRedirect($backUrl);
         exit;
@@ -53,13 +51,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
 
 try {
   if ($doctorId <= 0) {
-    $errors[] = 'Не передан ID врача';
+    $errors[] = (string)Loc::getMessage('CLINIC_DOCTOR_VIEW_ID_REQUIRED');
   } else {
     $doctorRepository = new DoctorRepository();
     $doctor = $doctorRepository->getViewData($doctorId);
 
     if ($doctor === null) {
-      $errors[] = 'Врач не найден';
+      $errors[] = (string)Loc::getMessage('CLINIC_DOCTOR_VIEW_NOT_FOUND');
     }
   }
 } catch (\Throwable $exception) {
@@ -67,8 +65,8 @@ try {
 }
 
 $pageTitle = $doctor !== null
-  ? 'Карточка врача: ' . (string)($doctor['full_name'] ?? '')
-  : 'Карточка врача';
+  ? (string)Loc::getMessage('CLINIC_DOCTOR_VIEW_TITLE_WITH_NAME', ['#NAME#' => (string)($doctor['full_name'] ?? '')])
+  : (string)Loc::getMessage('CLINIC_DOCTOR_VIEW_TITLE');
 
 $APPLICATION->SetTitle($pageTitle);
 
@@ -264,26 +262,26 @@ $APPLICATION->SetTitle($pageTitle);
     <h1 class="doctor-view-title"><?= htmlspecialcharsbx($pageTitle) ?></h1>
 
     <p class="doctor-view-text">
-      Здесь показаны данные врача и связанные с ним процедуры.
+      <?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_DESCRIPTION')) ?>
     </p>
 
     <div class="doctor-view-toolbar">
       <a href="<?= htmlspecialcharsbx($backUrl) ?>" class="ui-btn ui-btn-light-border ui-btn-round">
-        <span class="ui-btn-text">Назад к списку</span>
+        <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_BUTTON_BACK')) ?></span>
       </a>
 
       <?php if ($doctor !== null): ?>
         <a
           href="<?= htmlspecialcharsbx($editUrl) ?>"
           class="ui-btn ui-btn-light-border ui-btn-round doctor-view-action-btn doctor-view-action-btn--edit">
-          <span class="ui-btn-text">Редактировать</span>
+          <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_BUTTON_EDIT')) ?></span>
         </a>
 
         <form
           action=""
           method="post"
           class="doctor-view-delete-form"
-          onsubmit="return confirm('Удалить врача?');">
+          onsubmit="return confirm('<?= \CUtil::JSEscape((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_DELETE_CONFIRM')) ?>');">
           <?= bitrix_sessid_post() ?>
           <input type="hidden" name="ID" value="<?= (int)$doctorId ?>">
           <input type="hidden" name="action" value="delete">
@@ -291,7 +289,7 @@ $APPLICATION->SetTitle($pageTitle);
           <button
             type="submit"
             class="ui-btn ui-btn-light-border ui-btn-round doctor-view-action-btn doctor-view-action-btn--delete">
-            <span class="ui-btn-text">Удалить врача</span>
+            <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_BUTTON_DELETE')) ?></span>
           </button>
         </form>
       <?php endif; ?>
@@ -308,12 +306,12 @@ $APPLICATION->SetTitle($pageTitle);
 
   <?php if ($doctor !== null): ?>
     <div class="doctor-view-card">
-      <div class="doctor-view-card-header">Данные врача</div>
+      <div class="doctor-view-card-header"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_CARD_DATA')) ?></div>
 
       <div class="doctor-view-card-body">
         <div class="doctor-view-grid">
           <div class="doctor-view-field">
-            <span class="doctor-view-field-label">ФИО</span>
+            <span class="doctor-view-field-label"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_FIELD_FULL_NAME')) ?></span>
             <p class="doctor-view-field-value">
               <?= htmlspecialcharsbx((string)($doctor['full_name'] ?? '')) ?>
             </p>
@@ -323,7 +321,7 @@ $APPLICATION->SetTitle($pageTitle);
     </div>
 
     <div class="doctor-view-card">
-      <div class="doctor-view-card-header">Процедуры врача</div>
+      <div class="doctor-view-card-header"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_CARD_PROCEDURES')) ?></div>
 
       <div class="doctor-view-card-body">
         <?php if (!empty($doctor['procedures'])): ?>
@@ -342,7 +340,7 @@ $APPLICATION->SetTitle($pageTitle);
           </div>
         <?php else: ?>
           <div class="doctor-view-empty">
-            У этого врача пока не выбраны процедуры.
+            <?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_VIEW_PROCEDURES_EMPTY')) ?>
           </div>
         <?php endif; ?>
       </div>

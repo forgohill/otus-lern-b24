@@ -1,0 +1,3 @@
+<?php
+
+$MESS['APP_CLINIC_PROCEDURE_REPOSITORY_IBLOCK_MODULE_REQUIRED'] = 'Модуль iblock не подключен';

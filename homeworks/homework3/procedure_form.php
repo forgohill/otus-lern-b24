@@ -5,11 +5,86 @@ declare(strict_types=1);
 use App\Clinic\ProcedureRepository;
 use App\Clinic\ProcedureService;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\UI\Extension;
+
+function homework3ProcedureFormCreateDefaults(): array
+{
+  return [
+    'name' => '',
+    'description' => '',
+  ];
+}
+
+function homework3ProcedureFormCreateRequestData(array $request): array
+{
+  return [
+    'name' => trim((string)($request['name'] ?? '')),
+    'description' => trim((string)($request['description'] ?? '')),
+  ];
+}
+
+function homework3ProcedureFormSubmit(string $action, array $formData, int $procedureId): array
+{
+  $service = new ProcedureService();
+
+  if ($action === 'save') {
+    $result = $service->create($formData);
+
+    if (!($result['success'] ?? false)) {
+      return [
+        'errors' => is_array($result['errors'] ?? null)
+          ? $result['errors']
+          : [(string)Loc::getMessage('CLINIC_PROCEDURE_FORM_SAVE_ERROR')],
+        'successMessage' => '',
+        'formData' => $formData,
+      ];
+    }
+
+    return [
+      'errors' => [],
+      'successMessage' => (string)Loc::getMessage('CLINIC_PROCEDURE_FORM_SUCCESS_CREATED', ['#ID#' => (string)$result['id']]),
+      'formData' => homework3ProcedureFormCreateDefaults(),
+    ];
+  }
+
+  if ($action === 'delete') {
+    $result = $service->delete($procedureId);
+
+    if (!($result['success'] ?? false)) {
+      return [
+        'errors' => is_array($result['errors'] ?? null)
+          ? $result['errors']
+          : [(string)Loc::getMessage('CLINIC_PROCEDURE_FORM_DELETE_ERROR')],
+        'successMessage' => '',
+        'formData' => $formData,
+      ];
+    }
+
+    return [
+      'errors' => [],
+      'successMessage' => (string)Loc::getMessage('CLINIC_PROCEDURE_FORM_SUCCESS_DELETED', ['#ID#' => (string)$procedureId]),
+      'formData' => $formData,
+    ];
+  }
+
+  return [
+    'errors' => [],
+    'successMessage' => '',
+    'formData' => $formData,
+  ];
+}
+
+function homework3ProcedureFormLoadExistingProcedures(): array
+{
+  $procedureRepository = new ProcedureRepository();
+
+  return $procedureRepository->getList();
+}
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
 
-$APPLICATION->SetTitle('Форма процедуры');
+Loc::loadMessages(__FILE__);
 
 Loader::includeModule('ui');
 
@@ -21,58 +96,41 @@ Extension::load([
   'ui.icon-set.main',
 ]);
 
-$formData = [
-  'name' => '',
-  'description' => '',
-];
-
 $errors = [];
 $successMessage = '';
 $cancelUrl = 'index.php';
+$formActionUrl = 'procedure_form.php';
+$pageTitle = (string)Loc::getMessage('CLINIC_PROCEDURE_FORM_TITLE');
+$pageHeading = (string)Loc::getMessage('CLINIC_PROCEDURE_FORM_HEADING');
+$pageDescription = (string)Loc::getMessage('CLINIC_PROCEDURE_FORM_DESCRIPTION');
+$formData = homework3ProcedureFormCreateDefaults();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
   $action = (string)($_POST['action'] ?? '');
+  $procedureId = (int)($_POST['procedure_id'] ?? 0);
+
+  if ($action === 'save') {
+    $formData = homework3ProcedureFormCreateRequestData($_POST);
+  }
 
   try {
-    $service = new ProcedureService();
-
-    if ($action === 'save') {
-      $formData['name'] = trim((string)($_POST['name'] ?? ''));
-      $formData['description'] = trim((string)($_POST['description'] ?? ''));
-
-      $result = $service->create($formData);
-
-      if ($result['success']) {
-        $successMessage = 'Процедура создана. ID: ' . $result['id'];
-        $formData = [
-          'name' => '',
-          'description' => '',
-        ];
-      } else {
-        $errors = $result['errors'];
-      }
-    } elseif ($action === 'delete') {
-      $procedureId = (int)($_POST['procedure_id'] ?? 0);
-      $result = $service->delete($procedureId);
-
-      if ($result['success']) {
-        $successMessage = 'Процедура удалена. ID: ' . $procedureId;
-      } else {
-        $errors = $result['errors'];
-      }
-    }
+    $submitResult = homework3ProcedureFormSubmit($action, $formData, $procedureId);
+    $errors = $submitResult['errors'];
+    $successMessage = $submitResult['successMessage'];
+    $formData = $submitResult['formData'];
   } catch (\Throwable $exception) {
     $errors[] = $exception->getMessage();
   }
 }
 
 try {
-  $procedureRepository = new ProcedureRepository();
-  $existingProcedures = $procedureRepository->getList();
+  $existingProcedures = homework3ProcedureFormLoadExistingProcedures();
 } catch (\Throwable $exception) {
   $existingProcedures = [];
   $errors[] = $exception->getMessage();
 }
+
+$APPLICATION->SetTitle($pageTitle);
 
 ?>
 
@@ -196,9 +254,10 @@ try {
   .procedure-existing-item {
     display: flex;
     align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 20px 12px 12px;
+    padding: 6px 20px 6px 12px;
     border-bottom: 1px solid #eef2f4;
   }
 
@@ -248,7 +307,7 @@ try {
   }
 
   .procedure-delete-btn:hover {
-    background: #fff1f1;
+    background: #ededed;
     color: #d64545;
   }
 
@@ -260,10 +319,10 @@ try {
 
 <div class="procedure-form-page">
   <div class="procedure-form-hero">
-    <h1 class="procedure-form-title">Добавление процедуры</h1>
+    <h1 class="procedure-form-title"><?= htmlspecialcharsbx($pageHeading) ?></h1>
 
     <p class="procedure-form-text">
-      На этой странице можно добавить новую процедуру и сразу увидеть текущий список процедур из инфоблока.
+      <?= htmlspecialcharsbx($pageDescription) ?>
     </p>
   </div>
 
@@ -282,13 +341,13 @@ try {
       </div>
     <?php endif; ?>
 
-    <form action="" method="post">
+    <form action="<?= htmlspecialcharsbx($formActionUrl) ?>" method="post">
       <?= bitrix_sessid_post() ?>
 
       <div class="ui-form">
         <div class="ui-form-row">
           <div class="ui-form-label">
-            <div class="ui-ctl-label-text">Название процедуры</div>
+            <div class="ui-ctl-label-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_FIELD_NAME')) ?></div>
           </div>
 
           <div class="ui-form-content">
@@ -298,14 +357,14 @@ try {
                 name="name"
                 class="ui-ctl-element"
                 value="<?= htmlspecialcharsbx($formData['name']) ?>"
-                placeholder="Например: Первичный осмотр">
+                placeholder="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_PLACEHOLDER_NAME')) ?>">
             </div>
           </div>
         </div>
 
         <div class="ui-form-row">
           <div class="ui-form-label">
-            <div class="ui-ctl-label-text">Описание процедуры</div>
+            <div class="ui-ctl-label-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_FIELD_DESCRIPTION')) ?></div>
           </div>
 
           <div class="ui-form-content">
@@ -314,7 +373,7 @@ try {
                 name="description"
                 class="ui-ctl-element"
                 rows="6"
-                placeholder="Краткое описание процедуры"><?= htmlspecialcharsbx($formData['description']) ?></textarea>
+                placeholder="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_PLACEHOLDER_DESCRIPTION')) ?>"><?= htmlspecialcharsbx($formData['description']) ?></textarea>
             </div>
           </div>
         </div>
@@ -326,22 +385,22 @@ try {
           name="action"
           value="save"
           class="ui-btn ui-btn-success ui-btn-round">
-          <span class="ui-btn-text">Сохранить</span>
+          <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_BUTTON_SAVE')) ?></span>
         </button>
 
         <a
           href="<?= htmlspecialcharsbx($cancelUrl) ?>"
           class="ui-btn ui-btn-light-border ui-btn-round">
-          <span class="ui-btn-text">Назад</span>
+          <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_BUTTON_BACK')) ?></span>
         </a>
       </div>
     </form>
 
     <div class="procedure-existing-block">
-      <h2 class="procedure-existing-title">Список процедур</h2>
+      <h2 class="procedure-existing-title"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_EXISTING_TITLE')) ?></h2>
 
       <p class="procedure-existing-text">
-        Ниже показаны процедуры, которые уже есть в инфоблоке.
+        <?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_EXISTING_TEXT')) ?>
       </p>
 
       <div class="procedure-existing-scroll">
@@ -359,10 +418,10 @@ try {
               </div>
 
               <form
-                action=""
+                action="<?= htmlspecialcharsbx($formActionUrl) ?>"
                 method="post"
                 class="procedure-delete-form"
-                onsubmit="return confirm('Удалить процедуру?');">
+                onsubmit="return confirm('<?= \CUtil::JSEscape((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_DELETE_CONFIRM')) ?>');">
                 <?= bitrix_sessid_post() ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="procedure_id" value="<?= (int)($procedure['ID'] ?? 0) ?>">
@@ -370,8 +429,8 @@ try {
                 <button
                   type="submit"
                   class="procedure-delete-btn"
-                  title="Удалить процедуру"
-                  aria-label="Удалить процедуру">
+                  title="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_DELETE_TITLE')) ?>"
+                  aria-label="<?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_PROCEDURE_FORM_DELETE_TITLE')) ?>">
                   <div class="ui-icon-set --trash-bin"></div>
                 </button>
               </form>

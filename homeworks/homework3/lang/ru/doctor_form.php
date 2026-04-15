@@ -21,6 +21,7 @@ $MESS['CLINIC_DOCTOR_FORM_PROCEDURES_EMPTY'] = 'Процедуры не найд
 $MESS['CLINIC_DOCTOR_FORM_PROCEDURES_HELP'] = 'Нажми «Добавить» и выбери одну или несколько процедур.';
 $MESS['CLINIC_DOCTOR_FORM_BUTTON_SAVE'] = 'Сохранить';
 $MESS['CLINIC_DOCTOR_FORM_BUTTON_SAVE_CHANGES'] = 'Сохранить изменения';
+$MESS['CLINIC_DOCTOR_FORM_BUTTON_SAVE_AND_ADD_MORE'] = 'Сохранить и добавить еще';
 $MESS['CLINIC_DOCTOR_FORM_BUTTON_BACK'] = 'Назад';
 $MESS['CLINIC_DOCTOR_FORM_SELECTOR_PLACEHOLDER'] = 'Выберите процедуры';
 $MESS['CLINIC_DOCTOR_FORM_SELECTOR_ADD'] = 'Добавить';

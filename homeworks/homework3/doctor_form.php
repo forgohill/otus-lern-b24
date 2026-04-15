@@ -172,6 +172,7 @@ if ($isEditMode && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
+  $action = (string)($_POST['action'] ?? 'save');
   $formData = homework3DoctorFormCreateRequestData($_POST);
 
   try {
@@ -179,6 +180,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
     $errors = $submitResult['errors'];
     $successMessage = $submitResult['successMessage'];
     $formData = $submitResult['formData'];
+
+    if ($action === 'save' && $errors === []) {
+      LocalRedirect('index.php');
+      exit;
+    }
   } catch (\Throwable $exception) {
     $errors[] = $exception->getMessage();
   }
@@ -278,6 +284,19 @@ $selectedProcedureItems = $procedureSelectorData['selectedItems'];
 
   .doctor-form-actions .ui-btn {
     margin: 0;
+  }
+
+  .doctor-form-save-more-btn {
+    color: #7d8691;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .doctor-form-save-more-btn:hover,
+  .doctor-form-save-more-btn:focus {
+    background-color: #bbed21 !important;
+    border-color: #bbed21 !important;
+    color: #1f2d3d !important;
+    box-shadow: 0 6px 18px rgba(187, 237, 33, 0.28);
   }
 
   .doctor-procedure-selector {
@@ -403,12 +422,22 @@ $selectedProcedureItems = $procedureSelectorData['selectedItems'];
       <div class="doctor-form-actions">
         <button
           type="submit"
+          name="action"
+          value="save"
           class="ui-btn ui-btn-success ui-btn-round">
           <span class="ui-btn-text">
             <?= htmlspecialcharsbx($isEditMode
               ? (string)Loc::getMessage('CLINIC_DOCTOR_FORM_BUTTON_SAVE_CHANGES')
               : (string)Loc::getMessage('CLINIC_DOCTOR_FORM_BUTTON_SAVE')) ?>
           </span>
+        </button>
+
+        <button
+          type="submit"
+          name="action"
+          value="save_and_add_more"
+          class="ui-btn ui-btn-light-border ui-btn-round doctor-form-save-more-btn">
+          <span class="ui-btn-text"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_DOCTOR_FORM_BUTTON_SAVE_AND_ADD_MORE')) ?></span>
         </button>
 
         <a

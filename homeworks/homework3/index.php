@@ -20,7 +20,6 @@ Extension::load([
   'ui.icon-set.main',
 ]);
 
-
 $addDoctorUrl = 'doctor_form.php';
 $addProcedureUrl = 'procedure_form.php';
 
@@ -74,6 +73,62 @@ $doctors = $doctorRepository->getList();
     line-height: 24px;
     color: #525c69;
     max-width: 800px;
+  }
+
+  .homework-description {
+    position: relative;
+    margin: 0;
+    font-size: 15px;
+    line-height: 24px;
+    color: #525c69;
+    max-width: 800px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+    overflow: hidden;
+  }
+
+  .homework-description::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 36px;
+    background: linear-gradient(to bottom, rgba(248, 250, 252, 0), #f8fafc 90%);
+  }
+
+  .homework-description.is-expanded {
+    display: block;
+    overflow: visible;
+  }
+
+  .homework-description.is-expanded::after {
+    display: none;
+  }
+
+  .homework-description code {
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #eef3f8;
+    color: #1f2d3d;
+    font-size: 13px;
+  }
+
+  .homework-description-toggle {
+    margin-top: 12px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #2f7cf6;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .homework-description-toggle:hover {
+    color: #1b63d0;
   }
 
   .homework-section {
@@ -256,9 +311,48 @@ $doctors = $doctorRepository->getList();
     <div>
       <h2 class="homework-subtitle"><?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_SUBTITLE')) ?></h2>
 
-      <p class="homework-text">
-        <?= htmlspecialcharsbx((string)Loc::getMessage('CLINIC_INDEX_DESCRIPTION')) ?>
-      </p>
+      <div class="homework-description" id="project-description">
+        Проект реализован как небольшой модуль на Bitrix D7 и разделён на два уровня:
+        страницы интерфейса в <code>homeworks/homework3</code> и прикладная логика
+        в <code>local/App/Clinic</code>. Файл <code>index.php</code> отвечает за стартовую
+        страницу: он подключает Bitrix UI, получает список врачей через
+        <code>DoctorRepository</code> и выводит карточки со ссылками на просмотр,
+        редактирование и создание врача.<br><br>
+
+        Файл <code>doctor_form.php</code> реализует форму создания и редактирования врача:
+        внутри него отдельно выделены шаги загрузки данных, обработки POST и подготовки
+        переменных для шаблона, а выбор процедур сделан через <code>TagSelector</code>.
+        Файл <code>procedure_form.php</code> отвечает за создание и удаление процедур,
+        а также за вывод списка уже существующих процедур. Файл
+        <code>doctor_view.php</code> показывает карточку врача и связанные с ним процедуры,
+        а удаление врача делегирует сервису, а не выполняет напрямую на странице.<br><br>
+
+        Вся бизнес-логика вынесена в <code>local/App/Clinic</code>. Файл
+        <code>ClinicConfig.php</code> хранит константы с кодами инфоблоков и свойств,
+        чтобы не дублировать их по проекту. <code>DoctorRepository.php</code> отвечает
+        за чтение врачей: он получает список врачей, одного врача по ID и данные для
+        детального просмотра. Для карточки врача он собирает связанные процедуры через
+        ORM Bitrix и <code>registerRuntimeField</code>, то есть связь между врачом и
+        процедурами строится на уровне запроса, а не в шаблоне страницы.<br><br>
+
+        <code>ProcedureRepository.php</code> читает список процедур и процедуры по массиву
+        идентификаторов. <code>DoctorService.php</code> отвечает за создание, обновление
+        и удаление врачей, проверяет обязательные поля, назначает <code>IBLOCK_ID</code>,
+        сохраняет ФИО и отдельно синхронизирует множественное свойство с процедурами.
+        <code>ProcedureService.php</code> создаёт и удаляет процедуры и также проверяет
+        входные данные перед сохранением. Дополнительно проект поддерживает локализацию:
+        для страниц используются файлы в <code>homeworks/homework3/lang/ru</code>, а для
+        прикладных классов в <code>local/App/Clinic/lang/ru</code>.
+      </div>
+
+      <button
+        type="button"
+        class="homework-description-toggle"
+        id="project-description-toggle"
+        aria-expanded="false"
+        aria-controls="project-description">
+        Показать все
+      </button>
     </div>
 
     <div class="homework-toolbar">
@@ -277,11 +371,7 @@ $doctors = $doctorRepository->getList();
   </div>
 
   <div class="homework-section" id="doctors">
-
-
     <div class="homework-section-body">
-
-
       <div class="homework-cards">
         <?php foreach ($doctors as $doctor): ?>
           <?php
@@ -328,6 +418,24 @@ $doctors = $doctorRepository->getList();
     </div>
   </div>
 </div>
+
+<script>
+  BX.ready(function() {
+    const description = document.getElementById('project-description');
+    const toggle = document.getElementById('project-description-toggle');
+
+    if (!description || !toggle) {
+      return;
+    }
+
+    toggle.addEventListener('click', function() {
+      const expanded = description.classList.toggle('is-expanded');
+
+      toggle.textContent = expanded ? 'Свернуть' : 'Показать все';
+      toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    });
+  });
+</script>
 
 <div class="homework-floating-top">
   <a href="#top" class="ui-btn ui-btn-primary ui-btn-round">

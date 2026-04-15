@@ -50,6 +50,36 @@ class ProcedureRepository
   return $row ?: null;
  }
 
+ public function getByIds(array $ids): array
+ {
+  $ids = array_values(array_unique(array_filter(
+   array_map('intval', $ids),
+   static fn(int $id): bool => $id > 0
+  )));
+
+  if ($ids === []) {
+   return [];
+  }
+
+  $this->loadIblockModule();
+
+  return ElementProceduresTable::getList([
+   'select' => [
+    'ID',
+    'NAME',
+    'CODE',
+    'DESCRIPTION' => ClinicConfig::PROCEDURE_DESCRIPTION_VALUE,
+   ],
+   'filter' => [
+    '@ID' => $ids,
+    '=ACTIVE' => 'Y',
+   ],
+   'order' => [
+    'ID' => 'ASC',
+   ],
+  ])->fetchAll();
+ }
+
  private function loadIblockModule(): void
  {
   if (!Loader::includeModule('iblock')) {

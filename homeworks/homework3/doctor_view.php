@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Clinic\DoctorRepository;
-use App\Clinic\ProcedureRepository;
+use Bitrix\Iblock\Elements\ElementDoctorsTable;
 use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
 
@@ -17,29 +17,49 @@ Extension::load([
   'ui.icon-set.main',
 ]);
 
-$doctorId = isset($_GET['ID']) ? (int)$_GET['ID'] : 0;
+$doctorId = isset($_REQUEST['ID']) ? (int)$_REQUEST['ID'] : 0;
 $backUrl = 'index.php';
 $editUrl = 'doctor_form.php?ID=' . $doctorId;
 
 $errors = [];
 $doctor = null;
-$procedures = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid()) {
+  $action = (string)($_POST['action'] ?? '');
+
+  if ($action === 'delete') {
+    try {
+      if ($doctorId <= 0) {
+        throw new \RuntimeException('Не передан ID врача');
+      }
+
+      if (!Loader::includeModule('iblock')) {
+        throw new \RuntimeException('Модуль iblock не подключен');
+      }
+
+      $deleteResult = ElementDoctorsTable::delete($doctorId);
+
+      if (!$deleteResult->isSuccess()) {
+        $errors = $deleteResult->getErrorMessages();
+      } else {
+        LocalRedirect($backUrl);
+        exit;
+      }
+    } catch (\Throwable $exception) {
+      $errors[] = $exception->getMessage();
+    }
+  }
+}
 
 try {
-  $doctorRepository = new DoctorRepository();
-  $doctor = $doctorRepository->getCardData($doctorId);
-
-  if ($doctor === null) {
-    $errors[] = 'Врач не найден';
+  if ($doctorId <= 0) {
+    $errors[] = 'Не передан ID врача';
   } else {
-    $procedureRepository = new ProcedureRepository();
+    $doctorRepository = new DoctorRepository();
+    $doctor = $doctorRepository->getViewData($doctorId);
 
-    foreach (($doctor['procedure_ids'] ?? []) as $procedureId) {
-      $procedure = $procedureRepository->getById((int)$procedureId);
-
-      if ($procedure !== null) {
-        $procedures[] = $procedure;
-      }
+    if ($doctor === null) {
+      $errors[] = 'Врач не найден';
     }
   }
 } catch (\Throwable $exception) {
@@ -94,6 +114,31 @@ $APPLICATION->SetTitle($pageTitle);
     flex-wrap: wrap;
     gap: 12px;
     margin-top: 20px;
+  }
+
+  .doctor-view-delete-form {
+    margin: 0;
+  }
+
+  .doctor-view-toolbar .doctor-view-action-btn {
+    margin: 0;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .doctor-view-toolbar .doctor-view-action-btn--edit:hover,
+  .doctor-view-toolbar .doctor-view-action-btn--edit:focus {
+    background-color: #2fc6f6 !important;
+    border-color: #2fc6f6 !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(47, 198, 246, 0.25);
+  }
+
+  .doctor-view-toolbar .doctor-view-action-btn--delete:hover,
+  .doctor-view-toolbar .doctor-view-action-btn--delete:focus {
+    background-color: #ff5752 !important;
+    border-color: #ff5752 !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 18px rgba(255, 87, 82, 0.22);
   }
 
   .doctor-view-card {
@@ -219,7 +264,7 @@ $APPLICATION->SetTitle($pageTitle);
     <h1 class="doctor-view-title"><?= htmlspecialcharsbx($pageTitle) ?></h1>
 
     <p class="doctor-view-text">
-      Здесь показаны реальные данные врача и связанные с ним процедуры.
+      Здесь показаны данные врача и связанные с ним процедуры.
     </p>
 
     <div class="doctor-view-toolbar">
@@ -228,9 +273,27 @@ $APPLICATION->SetTitle($pageTitle);
       </a>
 
       <?php if ($doctor !== null): ?>
-        <a href="<?= htmlspecialcharsbx($editUrl) ?>" class="ui-btn ui-btn-primary ui-btn-round">
+        <a
+          href="<?= htmlspecialcharsbx($editUrl) ?>"
+          class="ui-btn ui-btn-light-border ui-btn-round doctor-view-action-btn doctor-view-action-btn--edit">
           <span class="ui-btn-text">Редактировать</span>
         </a>
+
+        <form
+          action=""
+          method="post"
+          class="doctor-view-delete-form"
+          onsubmit="return confirm('Удалить врача?');">
+          <?= bitrix_sessid_post() ?>
+          <input type="hidden" name="ID" value="<?= (int)$doctorId ?>">
+          <input type="hidden" name="action" value="delete">
+
+          <button
+            type="submit"
+            class="ui-btn ui-btn-light-border ui-btn-round doctor-view-action-btn doctor-view-action-btn--delete">
+            <span class="ui-btn-text">Удалить врача</span>
+          </button>
+        </form>
       <?php endif; ?>
     </div>
   </div>
@@ -255,8 +318,6 @@ $APPLICATION->SetTitle($pageTitle);
               <?= htmlspecialcharsbx((string)($doctor['full_name'] ?? '')) ?>
             </p>
           </div>
-
-
         </div>
       </div>
     </div>
@@ -265,9 +326,9 @@ $APPLICATION->SetTitle($pageTitle);
       <div class="doctor-view-card-header">Процедуры врача</div>
 
       <div class="doctor-view-card-body">
-        <?php if ($procedures !== []): ?>
+        <?php if (!empty($doctor['procedures'])): ?>
           <div class="doctor-view-procedures">
-            <?php foreach ($procedures as $procedure): ?>
+            <?php foreach ($doctor['procedures'] as $procedure): ?>
               <div class="doctor-view-procedure-item">
                 <span class="doctor-view-procedure-name">
                   <?= htmlspecialcharsbx((string)($procedure['NAME'] ?? '')) ?>

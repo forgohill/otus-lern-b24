@@ -6,7 +6,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\UI\Extension;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
-require __DIR__ . '/demo_data.php';
+
 
 $APPLICATION->SetTitle('Домашняя работа 3');
 
@@ -18,8 +18,6 @@ Extension::load([
   'ui.icon-set.main',
 ]);
 
-$doctors = homework3GetDoctorList();
-$demoNotice = homework3GetDemoNotice();
 
 $addDoctorUrl = 'doctor_form.php';
 $addProcedureUrl = 'procedure_form.php';

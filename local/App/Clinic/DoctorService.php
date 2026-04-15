@@ -124,6 +124,32 @@ class DoctorService
   ];
  }
 
+ public function delete(int $id): array
+ {
+  $this->loadIblockModule();
+
+  if ($id <= 0) {
+   return [
+    'success' => false,
+    'errors' => ['РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ ID РІСЂР°С‡Р°'],
+   ];
+  }
+
+  $result = ElementDoctorsTable::delete($id);
+
+  if (!$result->isSuccess()) {
+   return [
+    'success' => false,
+    'errors' => $this->extractOrmErrors($result, 'РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ РІСЂР°С‡Р°'),
+   ];
+  }
+
+  return [
+   'success' => true,
+   'errors' => [],
+  ];
+ }
+
  private function extractDoctorData(array $data): array
  {
   return [

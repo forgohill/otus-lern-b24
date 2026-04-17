@@ -1,0 +1,112 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap");
+
+.pantone-edit {
+ font-family: Manrope, sans-serif;
+ font-weight: 500;
+}
+
+.pantone-edit-item {
+ grid-template-columns: 64px minmax(180px, 1fr) minmax(180px, 2fr) auto;
+}
+
+.pantone-date {
+ margin-bottom: 4px;
+ color: #64748b;
+ font-size: 13px;
+ line-height: 18px;
+}
+
+.pantone-edit-actions {
+ display: flex;
+ justify-content: flex-end;
+}
+
+.pantone-edit-status {
+ max-width: 820px;
+}
+
+.pantone-edit-popup {
+ width: 100%;
+ box-sizing: border-box;
+ padding: 4px;
+ font-family: Manrope, sans-serif;
+ font-weight: 500;
+}
+
+.pantone-edit-form {
+ display: grid;
+ gap: 18px;
+}
+
+.pantone-edit-form-grid {
+ display: grid;
+ grid-template-columns: repeat(2, minmax(0, 1fr));
+ gap: 16px;
+}
+
+.pantone-edit-field {
+ display: grid;
+ gap: 8px;
+ margin: 0;
+}
+
+.pantone-edit-label {
+ color: #334155;
+ font-size: 14px;
+ line-height: 20px;
+}
+
+.pantone-edit-input,
+.pantone-edit-textarea {
+ width: 100%;
+ box-sizing: border-box;
+ border: 1px solid #dbe4ee;
+ border-radius: 8px;
+ background: #ffffff;
+ color: #1f2937;
+ font: inherit;
+ font-size: 15px;
+ line-height: 22px;
+ outline: none;
+ transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.pantone-edit-input {
+ min-height: 44px;
+ padding: 10px 12px;
+}
+
+.pantone-edit-textarea {
+ min-height: 96px;
+ resize: vertical;
+ padding: 12px;
+}
+
+.pantone-edit-input:focus,
+.pantone-edit-textarea:focus {
+ border-color: #2563eb;
+ box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+}
+
+.pantone-edit-input::placeholder,
+.pantone-edit-textarea::placeholder {
+ color: #94a3b8;
+}
+
+@media (max-width: 840px) {
+ .pantone-edit-item {
+  grid-template-columns: 48px 1fr;
+  align-items: start;
+ }
+
+ .pantone-edit-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+ }
+}
+
+@media (max-width: 620px) {
+ .pantone-edit-form-grid {
+  grid-template-columns: 1fr;
+ }
+}

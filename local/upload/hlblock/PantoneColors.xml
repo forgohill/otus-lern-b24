@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hiblock>
+	<hiblock>
+		<id>2</id>
+		<name>PantoneColors</name>
+		<table_name>o_pantone_colors</table_name>
+	</hiblock>
+	<langs>
+		<lang>
+			<id>2</id>
+			<lid>ru</lid>
+			<name>Цвета Пантон</name>
+		</lang>
+		<lang>
+			<id>2</id>
+			<lid>en</lid>
+			<name>Pantone colors</name>
+		</lang>
+	</langs>
+	<fields>
+		<field>
+			<id>120</id>
+			<entity_id>HLBLOCK_2</entity_id>
+			<field_name>UF_NAME</field_name>
+			<user_type_id>string</user_type_id>
+			<xml_id>NAME</xml_id>
+			<sort>10</sort>
+			<multiple>N</multiple>
+			<mandatory>N</mandatory>
+			<show_filter>S</show_filter>
+			<show_in_list>Y</show_in_list>
+			<edit_in_list>Y</edit_in_list>
+			<is_searchable>N</is_searchable>
+			<settings>
+				<size>20</size>
+				<rows>1</rows>
+				<regexp />
+				<min_length>0</min_length>
+				<max_length>0</max_length>
+				<default_value />
+			</settings>
+			<edit_form_label>
+				<en>Color title</en>
+				<ru>Название цвета</ru>
+			</edit_form_label>
+			<list_column_label>
+				<en>Color title</en>
+				<ru>Название цвета</ru>
+			</list_column_label>
+			<list_filter_label>
+				<en>Color title</en>
+				<ru>Название цвета</ru>
+			</list_filter_label>
+			<error_message>
+				<en>Color title</en>
+				<ru>Название цвета</ru>
+			</error_message>
+			<help_message>
+				<en>Color title</en>
+				<ru>Название цвета</ru>
+			</help_message>
+			<base_type>string</base_type>
+		</field>
+		<field>
+			<id>121</id>
+			<entity_id>HLBLOCK_2</entity_id>
+			<field_name>UF_ACTIVE_FROM</field_name>
+			<user_type_id>datetime</user_type_id>
+			<xml_id>ACTIVE_FROM</xml_id>
+			<sort>20</sort>
+			<multiple>N</multiple>
+			<mandatory>N</mandatory>
+			<show_filter>S</show_filter>
+			<show_in_list>Y</show_in_list>
+			<edit_in_list>Y</edit_in_list>
+			<is_searchable>N</is_searchable>
+			<settings>
+				<default_value>
+					<type>NONE</type>
+					<value />
+				</default_value>
+				<use_second>Y</use_second>
+				<use_timezone>N</use_timezone>
+			</settings>
+			<edit_form_label>
+				<en>Data start active</en>
+				<ru>Дата начала доступности цвета</ru>
+			</edit_form_label>
+			<list_column_label>
+				<en>Data start active</en>
+				<ru>Дата начала доступности цвета</ru>
+			</list_column_label>
+			<list_filter_label>
+				<en>Data start active</en>
+				<ru>Дата начала доступности цвета</ru>
+			</list_filter_label>
+			<error_message>
+				<en>Data start active</en>
+				<ru>Дата начала доступности цвета</ru>
+			</error_message>
+			<help_message>
+				<en>Data start active</en>
+				<ru>Дата начала доступности цвета</ru>
+			</help_message>
+			<base_type>datetime</base_type>
+		</field>
+		<field>
+			<id>118</id>
+			<entity_id>HLBLOCK_2</entity_id>
+			<field_name>UF_XML_ID</field_name>
+			<user_type_id>string</user_type_id>
+			<xml_id>XML_ID</xml_id>
+			<sort>30</sort>
+			<multiple>N</multiple>
+			<mandatory>N</mandatory>
+			<show_filter>S</show_filter>
+			<show_in_list>Y</show_in_list>
+			<edit_in_list>Y</edit_in_list>
+			<is_searchable>N</is_searchable>
+			<settings>
+				<size>20</size>
+				<rows>1</rows>
+				<regexp />
+				<min_length>0</min_length>
+				<max_length>0</max_length>
+				<default_value />
+			</settings>
+			<edit_form_label>
+				<en>External code</en>
+				<ru>Внешний код</ru>
+			</edit_form_label>
+			<list_column_label>
+				<en>External code</en>
+				<ru>Внешний код</ru>
+			</list_column_label>
+			<list_filter_label>
+				<en>External code</en>
+				<ru>Внешний код</ru>
+			</list_filter_label>
+			<error_message>
+				<en>External code</en>
+				<ru>Внешний код</ru>
+			</error_message>
+			<help_message>
+				<en>External code</en>
+				<ru>Внешний код</ru>
+			</help_message>
+			<base_type>string</base_type>
+		</field>
+		<field>
+			<id>123</id>
+			<entity_id>HLBLOCK_2</entity_id>
+			<field_name>UF_TAGS</field_name>
+			<user_type_id>string</user_type_id>
+			<xml_id>TAGS</xml_id>
+			<sort>40</sort>
+			<multiple>Y</multiple>
+			<mandatory>N</mandatory>
+			<show_filter>S</show_filter>
+			<show_in_list>Y</show_in_list>
+			<edit_in_list>Y</edit_in_list>
+			<is_searchable>N</is_searchable>
+			<settings>
+				<size>20</size>
+				<rows>1</rows>
+				<regexp />
+				<min_length>0</min_length>
+				<max_length>0</max_length>
+				<default_value />
+			</settings>
+			<edit_form_label>
+				<en>Tags color</en>
+				<ru> Теги цвет</ru>
+			</edit_form_label>
+			<list_column_label>
+				<en>Tags color</en>
+				<ru> Теги цвет</ru>
+			</list_column_label>
+			<list_filter_label>
+				<en>Tags color</en>
+				<ru> Теги цвет</ru>
+			</list_filter_label>
+			<error_message>
+				<en>Tags color</en>
+				<ru> Теги цвет</ru>
+			</error_message>
+			<help_message>
+				<en>Tags color</en>
+				<ru> Теги цвет</ru>
+			</help_message>
+			<base_type>string</base_type>
+		</field>
+		<field>
+			<id>124</id>
+			<entity_id>HLBLOCK_2</entity_id>
+			<field_name>UF_HEX_CODE</field_name>
+			<user_type_id>string</user_type_id>
+			<xml_id>HEX_CODE</xml_id>
+			<sort>50</sort>
+			<multiple>N</multiple>
+			<mandatory>N</mandatory>
+			<show_filter>S</show_filter>
+			<show_in_list>Y</show_in_list>
+			<edit_in_list>Y</edit_in_list>
+			<is_searchable>N</is_searchable>
+			<settings>
+				<size>20</size>
+				<rows>1</rows>
+				<regexp />
+				<min_length>0</min_length>
+				<max_length>0</max_length>
+				<default_value />
+			</settings>
+			<edit_form_label>
+				<en>Color code</en>
+				<ru>Код цвета</ru>
+			</edit_form_label>
+			<list_column_label>
+				<en>Color code</en>
+				<ru>Код цвета</ru>
+			</list_column_label>
+			<list_filter_label>
+				<en>Color code</en>
+				<ru>Код цвета</ru>
+			</list_filter_label>
+			<error_message>
+				<en>Color code</en>
+				<ru>Код цвета</ru>
+			</error_message>
+			<help_message>
+				<en>Color code</en>
+				<ru>Код цвета</ru>
+			</help_message>
+			<base_type>string</base_type>
+		</field>
+		<field>
+			<id>125</id>
+			<entity_id>HLBLOCK_2</entity_id>
+			<field_name>UF_DESCRIPTION</field_name>
+			<user_type_id>string</user_type_id>
+			<xml_id />
+			<sort>100</sort>
+			<multiple>N</multiple>
+			<mandatory>N</mandatory>
+			<show_filter>N</show_filter>
+			<show_in_list>Y</show_in_list>
+			<edit_in_list>Y</edit_in_list>
+			<is_searchable>N</is_searchable>
+			<settings>
+				<size>20</size>
+				<rows>1</rows>
+				<regexp />
+				<min_length>0</min_length>
+				<max_length>0</max_length>
+				<default_value />
+			</settings>
+			<edit_form_label>
+				<ru>Описание</ru>
+			</edit_form_label>
+			<list_column_label>
+				<ru>Описание</ru>
+			</list_column_label>
+			<list_filter_label>
+				<ru>Описание</ru>
+			</list_filter_label>
+			<error_message>
+				<ru />
+			</error_message>
+			<help_message>
+				<ru />
+			</help_message>
+			<base_type>string</base_type>
+		</field>
+		<field>
+			<id>126</id>
+			<entity_id>HLBLOCK_2</entity_id>
+			<field_name>UF_FULL_DESCRIPTION</field_name>
+			<user_type_id>string</user_type_id>
+			<xml_id />
+			<sort>100</sort>
+			<multiple>N</multiple>
+			<mandatory>N</mandatory>
+			<show_filter>N</show_filter>
+			<show_in_list>Y</show_in_list>
+			<edit_in_list>Y</edit_in_list>
+			<is_searchable>N</is_searchable>
+			<settings>
+				<size>20</size>
+				<rows>1</rows>
+				<regexp />
+				<min_length>0</min_length>
+				<max_length>0</max_length>
+				<default_value />
+			</settings>
+			<edit_form_label>
+				<ru>Полное описание</ru>
+			</edit_form_label>
+			<list_column_label>
+				<ru>Полное описание</ru>
+			</list_column_label>
+			<list_filter_label>
+				<ru>Полное описание</ru>
+			</list_filter_label>
+			<error_message>
+				<ru />
+			</error_message>
+			<help_message>
+				<ru />
+			</help_message>
+			<base_type>string</base_type>
+		</field>
+	</fields>
+	<items>
+		<item>
+			<id>1</id>
+			<uf_name>Черный</uf_name>
+			<uf_active_from>01.04.2026 00:00:00</uf_active_from>
+			<uf_xml_id>chernyy</uf_xml_id>
+			<uf_tags>serialize#a:3:{i:0;s:29:&quot;Глубокий черный&quot;;i:1;s:31:&quot;      Адская бездна&quot;;i:2;s:41:&quot;      Подвальная темнота&quot;;}</uf_tags>
+			<uf_hex_code>121910</uf_hex_code>
+			<uf_description />
+			<uf_full_description />
+		</item>
+		<item>
+			<id>2</id>
+			<uf_name>Красный</uf_name>
+			<uf_active_from>02.04.2026 11:00:00</uf_active_from>
+			<uf_xml_id>krasniy</uf_xml_id>
+			<uf_tags>serialize#a:3:{i:0;s:27:&quot;Пылающий закат&quot;;i:1;s:23:&quot;Спелая вишня&quot;;i:2;s:31:&quot;Тревожный сигнал&quot;;}</uf_tags>
+			<uf_hex_code>ff0033</uf_hex_code>
+			<uf_description />
+			<uf_full_description />
+		</item>
+		<item>
+			<id>3</id>
+			<uf_name>Синий</uf_name>
+			<uf_active_from>03.04.2026 12:15:00</uf_active_from>
+			<uf_xml_id>siniy</uf_xml_id>
+			<uf_tags>serialize#a:3:{i:0;s:25:&quot;Глубокое море&quot;;i:1;s:25:&quot;Ночной индиго&quot;;i:2;s:33:&quot;Холодный горизонт&quot;;}</uf_tags>
+			<uf_hex_code>0057b8</uf_hex_code>
+			<uf_description />
+			<uf_full_description />
+		</item>
+		<item>
+			<id>4</id>
+			<uf_name>Зеленый</uf_name>
+			<uf_active_from>04.04.2026 09:45:00</uf_active_from>
+			<uf_xml_id>zeleniy</uf_xml_id>
+			<uf_tags>serialize#a:3:{i:0;s:21:&quot;Свежая хвоя&quot;;i:1;s:28:&quot;Лес после дождя&quot;;i:2;s:27:&quot;Травяной шепот&quot;;}</uf_tags>
+			<uf_hex_code>2e8b57</uf_hex_code>
+			<uf_description />
+			<uf_full_description />
+		</item>
+		<item>
+			<id>5</id>
+			<uf_name>Желтый</uf_name>
+			<uf_active_from>05.04.2026 14:20:00</uf_active_from>
+			<uf_xml_id>zheltiy</uf_xml_id>
+			<uf_tags>serialize#a:3:{i:0;s:25:&quot;Солнечный луч&quot;;i:1;s:25:&quot;Медовая искра&quot;;i:2;s:25:&quot;Теплый янтарь&quot;;}</uf_tags>
+			<uf_hex_code>ffd34d</uf_hex_code>
+			<uf_description />
+			<uf_full_description />
+		</item>
+		<item>
+			<id>6</id>
+			<uf_name>Фиолетовый</uf_name>
+			<uf_active_from>06.04.2026 16:00:00</uf_active_from>
+			<uf_xml_id>fioletoviy</uf_xml_id>
+			<uf_tags>serialize#a:3:{i:0;s:29:&quot;Сиреневый туман&quot;;i:1;s:27:&quot;Черничная ночь&quot;;i:2;s:33:&quot;Магический сумрак&quot;;}</uf_tags>
+			<uf_hex_code>7b3ff2</uf_hex_code>
+			<uf_description />
+			<uf_full_description />
+		</item>
+		<item>
+			<id>7</id>
+			<uf_name>Victorian Peacock</uf_name>
+			<uf_active_from>07.04.2026 00:00:00</uf_active_from>
+			<uf_xml_id>victorian_peacock</uf_xml_id>
+			<uf_tags>serialize#a:5:{i:0;s:16:&quot;глубокий&quot;;i:1;s:16:&quot;холодный&quot;;i:2;s:23:&quot;сине-зеленый&quot;;i:3;s:7:&quot;premium&quot;;i:4;s:6:&quot;accent&quot;;}</uf_tags>
+			<uf_hex_code>0f4666</uf_hex_code>
+			<uf_description>Глубокий сине-зелёный оттенок с холодным характером.
+Полное описание: Подходит для акцентных кнопок, тёмных интерфейсов, карточек и элементов с ощущением премиальности. Хорошо сочетается со светлыми нейтралами, песочными и латунными оттенками. Основано на палитре Adobe Color с цветом Victorian Peacock и RGB 15, 70, 102.</uf_description>
+			<uf_full_description />
+		</item>
+		<item>
+			<id>8</id>
+			<uf_name>Pretty Primrose</uf_name>
+			<uf_active_from>24.12.2025 00:00:00</uf_active_from>
+			<uf_xml_id>pretty_primrose</uf_xml_id>
+			<uf_tags>serialize#a:5:{i:0;s:12:&quot;теплый&quot;;i:1;s:12:&quot;мягкий&quot;;i:2;s:20:&quot;пастельный&quot;;i:3;s:5:&quot;peach&quot;;i:4;s:9:&quot;editorial&quot;;}</uf_tags>
+			<uf_hex_code>f5ab90</uf_hex_code>
+			<uf_description>Мягкий тёплый оттенок между персиковым и пудровым.
+Полное описание: Подходит для фоновых плашек, бейджей, декоративных блоков и мягких UI-акцентов. Хорошо работает в интерфейсах, где нужен тёплый и спокойный визуальный тон без яркой кислотности. Основано на палитре Adobe Color с цветом Pretty Primrose и RGB 245, 171, 144</uf_description>
+			<uf_full_description />
+		</item>
+		<item>
+			<id>9</id>
+			<uf_name>Sophisticated Plum</uf_name>
+			<uf_active_from>11.02.2026 00:00:00</uf_active_from>
+			<uf_xml_id>sophisticated_plum</uf_xml_id>
+			<uf_tags>serialize#a:5:{i:0;s:16:&quot;дымчатый&quot;;i:1;s:17:&quot; сливовый&quot;;i:2;s:6:&quot; muted&quot;;i:3;s:8:&quot; elegant&quot;;i:4;s:5:&quot; dark&quot;;}</uf_tags>
+			<uf_hex_code>5e5353</uf_hex_code>
+			<uf_description>Сдержанный тёмный сливово-серый оттенок.
+Полное описание: Подходит для типографики, вторичных фонов, рамок и спокойных тёмных тем. Даёт более сложное и “дорогое” ощущение, чем обычный серый или коричневый. Основано на палитре Adobe Color с цветом Sophisticated Plum и RGB 94, 83, 83</uf_description>
+			<uf_full_description />
+		</item>
+	</items>
+</hiblock>

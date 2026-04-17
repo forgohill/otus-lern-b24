@@ -55,21 +55,31 @@ $sandboxSections = [
    ],
   ],
  ],
- // [
- //  'title' => 'Связывание моделей',
- //  'items' => [
- //   [
- //    'label' => 'Связывание моделей',
- //    'description' => 'Тесты связывания моделей через инфоблоки Cars.',
- //    'url' => '/local/sandbox/multi/cars/',
- //   ],
- //   [
- //    'label' => 'Добавление элемента',
- //    'description' => 'Проверка создания элементов и записи свойств.',
- //    'url' => '/local/sandbox/iblock/add/',
- //   ],
- //  ],
- // ],
+ [
+  'title' => 'HL-блоки - справочники',
+  'items' => [
+   [
+    'label' => 'PantoneColors: список',
+    'description' => 'Чтение элементов HL-блока и вывод полей UF_NAME, UF_XML_ID, UF_TAGS, UF_HEX_CODE.',
+    'url' => '/local/sandbox/hlblock/pantone/',
+   ],
+   [
+    'label' => 'PantoneColors: добавление',
+    'description' => 'Создание нового цвета с названием, внешним кодом, тегами и HEX-кодом.',
+    'url' => '/local/sandbox/hlblock/pantone/add/',
+   ],
+   [
+    'label' => 'PantoneColors: редактирование',
+    'description' => 'Обновление полей существующего элемента справочника цветов.',
+    'url' => '/local/sandbox/hlblock/pantone/edit/',
+   ],
+   [
+    'label' => 'PantoneColors: удаление',
+    'description' => 'Удаление тестового элемента HL-блока и проверка результата.',
+    'url' => '/local/sandbox/hlblock/pantone/delete/',
+   ],
+  ],
+ ],
  // [
  //  'title' => 'REST / CRM',
  //  'items' => [

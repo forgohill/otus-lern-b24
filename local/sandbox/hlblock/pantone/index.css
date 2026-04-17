@@ -1,0 +1,87 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap");
+
+.pantone-colors {
+ font-family: Manrope, sans-serif;
+ font-weight: 500;
+}
+
+.pantone-list {
+ display: grid;
+ gap: 12px;
+ margin-top: 18px;
+}
+
+.pantone-item {
+ display: grid;
+ grid-template-columns: 64px minmax(180px, 1fr) minmax(180px, 2fr);
+ align-items: center;
+ gap: 18px;
+ padding: 14px 16px;
+ border: 1px solid #e2e8f0;
+ border-radius: 8px;
+ background: #ffffff;
+}
+
+.pantone-swatch {
+ width: 48px;
+ height: 48px;
+ border: 1px solid rgba(15, 23, 42, 0.16);
+ border-radius: 8px;
+ background: var(--pantone-color);
+ box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+}
+
+.pantone-content {
+ min-width: 0;
+}
+
+.pantone-name {
+ margin-bottom: 4px;
+ color: #1f2937;
+ font-size: 16px;
+ line-height: 22px;
+}
+
+.pantone-hex {
+ color: #64748b;
+ font-size: 13px;
+ line-height: 18px;
+ text-transform: uppercase;
+}
+
+.pantone-tags {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 8px;
+ justify-content: flex-end;
+ margin: 0;
+ padding: 0;
+ list-style: none;
+}
+
+.pantone-tag {
+ padding: 5px 10px;
+ border: 1px solid #dbe4ee;
+ border-radius: 999px;
+ background: #f8fafc;
+ color: #475569;
+ font-size: 13px;
+ line-height: 18px;
+}
+
+@media (max-width: 720px) {
+ .pantone-item {
+  grid-template-columns: 48px 1fr;
+  align-items: start;
+ }
+
+ .pantone-swatch {
+  width: 40px;
+  height: 40px;
+ }
+
+ .pantone-tags {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+ }
+}

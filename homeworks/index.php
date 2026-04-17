@@ -41,6 +41,7 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
 
     <h1 class="mb-3"><? $APPLICATION->ShowTitle() ?></h1>
     <div class="mb-3">Репозиторий: <a target="_blank" href="https://github.com/forgohill/otus-lern-b24">https://github.com/forgohill/otus-lern-b24/</a> указать URL своего репозитория</div>
+    <a class="btn btn-primary mb-3" href="/local/sandbox/index.php">Песочница</a>
     <ul class="item-list">
         <li>
             <h2 class="item done">

@@ -40,21 +40,21 @@ $sandboxSections = [
    // ],
   ],
  ],
- // [
- // 'title' => 'ORM',
- // 'items' => [
- //  [
- //   'label' => 'Cars',
- //   'description' => 'Через взаимодействие с инфоблоками Cars.',
- //   'url' => '/local/sandbox/orm/cars/',
- //  ],
- // [
- //  'label' => 'ORM',
- //  'description' => 'Эксперименты с D7 ORM и выборками.',
- //  'url' => '/local/sandbox/d7/orm/',
- // ],
- //  ],
- // ],
+ [
+  'title' => 'CRM',
+  'items' => [
+   [
+    'label' => 'Смарт процессы',
+    'description' => 'Получение с-п \ фабрики.',
+    'url' => '/local/sandbox/crm/first-sp/',
+   ],
+   [
+    'label' => 'Аналог DaData',
+    'description' => 'Поиск реквизитов по ИНН.',
+    'url' => '/local/sandbox/crm/first-sp/index-dadata.php',
+   ],
+  ],
+ ],
  // [
  //  'title' => 'Связывание моделей',
  //  'items' => [

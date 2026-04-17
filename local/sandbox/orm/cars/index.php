@@ -2,6 +2,7 @@
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
 
 $APPLICATION->SetTitle('ORM - Cars');
+\Bitrix\Main\Page\Asset::getInstance()->addCss('/local/sandbox/style.css');
 
 use Bitrix\Main\Loader;
 use Bitrix\Iblock\Iblock;
@@ -252,128 +253,6 @@ if ($iblockForDelete) {
 $resDelete = \Bitrix\Iblock\Elements\ElementCarTable::delete($idForResDelete);
 
 ?>
-<style>
- html {
-  scroll-behavior: smooth;
- }
-
- body {
-  font-family: "Open Sans", Arial, sans-serif;
- }
-
- .sandbox-page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 16px 48px;
- }
-
- .sandbox-hero {
-  background: #f8fafc;
-  border: 1px solid #dfe5ec;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
- }
-
- .sandbox-title {
-  margin: 0 0 12px;
-  font-size: 28px;
-  line-height: 36px;
-  font-weight: 700;
-  color: #1f2d3d;
- }
-
- .sandbox-text {
-  margin: 0;
-  font-size: 15px;
-  line-height: 24px;
-  color: #525c69;
-  max-width: 820px;
- }
-
- .sandbox-section {
-  background: #ffffff;
-  border: 1px solid #dfe5ec;
-  border-radius: 16px;
-  margin-bottom: 24px;
-  overflow: hidden;
- }
-
- .sandbox-section-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid #eef2f4;
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 600;
-  color: #1f2d3d;
-  background: #fff;
- }
-
- .sandbox-section-body {
-  padding: 24px;
- }
-
- .sandbox-actions {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: 1px solid #eef2f4;
-  border-radius: 12px;
-  overflow: hidden;
- }
-
- .sandbox-actions-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
-  border-bottom: 1px solid #eef2f4;
-  background: #fff;
- }
-
- .sandbox-actions-item:last-child {
-  border-bottom: none;
- }
-
- .sandbox-actions-content {
-  flex: 1;
- }
-
- .sandbox-actions-label {
-  margin: 0 0 4px;
-  font-size: 15px;
-  line-height: 22px;
-  font-weight: 600;
-  color: #2f3b47;
- }
-
- .sandbox-actions-description {
-  margin: 0;
-  font-size: 14px;
-  line-height: 21px;
-  color: #6b7280;
- }
-
- .sandbox-top-actions {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
- }
-
- @media (max-width: 768px) {
-  .sandbox-title {
-   font-size: 24px;
-   line-height: 32px;
-  }
-
-  .sandbox-actions-item {
-   flex-direction: column;
-   align-items: flex-start;
-  }
- }
-</style>
 
 <div class="sandbox-page">
  <div class="sandbox-top-actions">
@@ -389,23 +268,23 @@ $resDelete = \Bitrix\Iblock\Elements\ElementCarTable::delete($idForResDelete);
   <p>Здесь будут эксперименты с ORM для работы с инфоблоками, связанными с автомобилями.</p>
 
   <?php if ($iblockId): ?>
-   <div style="max-width: 30%; padding:14px 18px; margin:16px 0; border-radius:10px; background:#f0fff4; color:#1f7a3d; border:1px solid #b7ebc6; font-family:Arial,sans-serif;">
+   <div class="sandbox-status sandbox-status--success">
     <b>Инфоблок найден</b><br>
     ID инфоблока 'car': <?= htmlspecialcharsbx($iblockId) ?>
    </div>
   <?php else: ?>
-   <div style="max-width: 30%; padding:14px 18px; margin:16px 0; border-radius:10px; background:#fff5f5; color:#c53030; border:1px solid #f5b5b5; font-family:Arial,sans-serif;">
+   <div class="sandbox-status sandbox-status--error">
     <b>Ошибка</b><br>
     Инфоблок с кодом 'car' не найден
    </div>
   <?php endif; ?>
 
   <?php if ($iblockElementId): ?>
-   <div style="max-width: 30%; margin:12px 0;padding:10px 14px;border-radius:8px;font:14px/1.4 Arial,sans-serif;background:#f0fff4;color:#1f7a3d;border:1px solid #b7ebc6;">
+   <div class="sandbox-status sandbox-status--compact sandbox-status--success">
     <b>ID элемента audi_q7:</b> <?= htmlspecialcharsbx($iblockElementId) ?>
    </div>
   <?php else: ?>
-   <div style="max-width: 30%; margin:12px 0;padding:10px 14px;border-radius:8px;font:14px/1.4 Arial,sans-serif;background:#fff5f5;color:#c53030;border:1px solid #f5b5b5;">
+   <div class="sandbox-status sandbox-status--compact sandbox-status--error">
     <b>Ошибка:</b> Элемент с кодом audi_q7 не найден
    </div>
   <?php endif; ?>
@@ -467,122 +346,6 @@ if ($resDelete->isSuccess()) {
 }
 
 ?>
-
-<style>
- .sandbox-study {
-  max-width: 1100px;
-  margin: 24px auto 0;
-  padding: 0 16px 40px;
- }
-
- .sandbox-study-section {
-  background: #fff;
-  border: 1px solid #dfe5ec;
-  border-radius: 16px;
-  overflow: hidden;
- }
-
- .sandbox-study-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid #eef2f4;
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 600;
-  color: #1f2d3d;
-  background: #fff;
- }
-
- .sandbox-study-body {
-  padding: 24px;
-  background: #fff;
- }
-
- .sandbox-study-intro {
-  margin: 0 0 20px;
-  font-size: 14px;
-  line-height: 22px;
-  color: #525c69;
- }
-
- .sandbox-study-card {
-  border: 1px solid #eef2f4;
-  border-radius: 14px;
-  background: #fff;
-  padding: 18px 18px 16px;
-  margin-bottom: 16px;
- }
-
- .sandbox-study-card:last-child {
-  margin-bottom: 0;
- }
-
- .sandbox-study-badge {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #eef2f4;
-  color: #525c69;
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 600;
- }
-
- .sandbox-study-title {
-  margin: 0 0 10px;
-  font-size: 17px;
-  line-height: 24px;
-  font-weight: 600;
-  color: #2f3b47;
- }
-
- .sandbox-study-text {
-  margin: 0 0 12px;
-  font-size: 14px;
-  line-height: 22px;
-  color: #525c69;
- }
-
- .sandbox-study-code {
-  margin: 0 0 12px;
-  padding: 14px 16px;
-  border: 1px solid #eef2f4;
-  border-radius: 12px;
-  background: #f8fafc;
-  overflow-x: auto;
- }
-
- .sandbox-study-code code {
-  font-family: Consolas, Menlo, Monaco, monospace;
-  font-size: 13px;
-  line-height: 21px;
-  color: #1f2d3d;
-  white-space: pre;
-  display: block;
- }
-
- .sandbox-study-note {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: #f6fcff;
-  border: 1px solid #d7eef9;
-  font-size: 13px;
-  line-height: 21px;
-  color: #4a5568;
- }
-
- @media (max-width: 768px) {
-  .sandbox-study-header {
-   font-size: 18px;
-   line-height: 24px;
-  }
-
-  .sandbox-study-body {
-   padding: 18px;
-  }
- }
-</style>
 
 <div class="sandbox-study">
  <div class="sandbox-study-section">

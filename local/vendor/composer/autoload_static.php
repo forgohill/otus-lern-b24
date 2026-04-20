@@ -17,6 +17,10 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Component\\VarDumper\\' => 28,
         ),
+        'M' =>
+        array (
+            'Models\\HospitalClients\\' => 23,
+        ),
         'L' =>
         array (
             'Local\\' => 6,
@@ -35,6 +39,10 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
         'Symfony\\Component\\VarDumper\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/var-dumper',
+        ),
+        'Models\\HospitalClients\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/modules/HospitalClients/lib',
         ),
         'Local\\' =>
         array (

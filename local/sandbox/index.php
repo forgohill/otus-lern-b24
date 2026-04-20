@@ -1,11 +1,13 @@
 <?php
 
 use Bitrix\Main\Loader;
+use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
 
 $APPLICATION->SetTitle('Песочница');
+Asset::getInstance()->addCss('/local/sandbox/style.css');
 
 if (Loader::includeModule('ui')) {
  Extension::load([
@@ -80,21 +82,26 @@ $sandboxSections = [
    ],
   ],
  ],
- // [
- //  'title' => 'REST / CRM',
- //  'items' => [
- //   [
- //    'label' => 'REST запросы',
- //    'description' => 'Песочница для проверки REST-вызовов.',
- //    'url' => '/local/sandbox/rest/test/',
- //   ],
- //   [
- //    'label' => 'CRM',
- //    'description' => 'Локальные тесты сущностей CRM.',
- //    'url' => '/local/sandbox/crm/test/',
- //   ],
- //  ],
- // ],
+ [
+  'title' => 'Таблицы БД через ORM',
+  'items' => [
+   [
+    'label' => 'Описание таблицы',
+    'description' => 'DataManager-класс, карта полей и подключение собственной таблицы БД.',
+    'url' => '/local/sandbox/orm/tables/',
+   ],
+   [
+    'label' => 'Books: интерфейс',
+    'description' => 'Заготовка страницы для схемы books и связанных таблиц без подключения ORM-класса.',
+    'url' => '/local/sandbox/orm/tables/books/',
+   ],
+   [
+    'label' => 'CRUD-запросы',
+    'description' => 'Добавление, выборка, обновление и удаление записей через D7 ORM.',
+    'url' => '/local/sandbox/orm/tables/crud/',
+   ],
+  ],
+ ],
  // [
  //  'title' => 'Отладка',
  //  'items' => [
@@ -108,129 +115,6 @@ $sandboxSections = [
 ];
 
 ?>
-
-<style>
- html {
-  scroll-behavior: smooth;
- }
-
- body {
-  font-family: "Open Sans", Arial, sans-serif;
- }
-
- .sandbox-page {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 16px 48px;
- }
-
- .sandbox-hero {
-  background: #f8fafc;
-  border: 1px solid #dfe5ec;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
- }
-
- .sandbox-title {
-  margin: 0 0 12px;
-  font-size: 28px;
-  line-height: 36px;
-  font-weight: 700;
-  color: #1f2d3d;
- }
-
- .sandbox-text {
-  margin: 0;
-  font-size: 15px;
-  line-height: 24px;
-  color: #525c69;
-  max-width: 820px;
- }
-
- .sandbox-section {
-  background: #ffffff;
-  border: 1px solid #dfe5ec;
-  border-radius: 16px;
-  margin-bottom: 24px;
-  overflow: hidden;
- }
-
- .sandbox-section-header {
-  padding: 18px 24px;
-  border-bottom: 1px solid #eef2f4;
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 600;
-  color: #1f2d3d;
-  background: #fff;
- }
-
- .sandbox-section-body {
-  padding: 24px;
- }
-
- .sandbox-actions {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border: 1px solid #eef2f4;
-  border-radius: 12px;
-  overflow: hidden;
- }
-
- .sandbox-actions-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 18px;
-  border-bottom: 1px solid #eef2f4;
-  background: #fff;
- }
-
- .sandbox-actions-item:last-child {
-  border-bottom: none;
- }
-
- .sandbox-actions-content {
-  flex: 1;
- }
-
- .sandbox-actions-label {
-  margin: 0 0 4px;
-  font-size: 15px;
-  line-height: 22px;
-  font-weight: 600;
-  color: #2f3b47;
- }
-
- .sandbox-actions-description {
-  margin: 0;
-  font-size: 14px;
-  line-height: 21px;
-  color: #6b7280;
- }
-
- .sandbox-top-actions {
-  margin-bottom: 16px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
- }
-
- @media (max-width: 768px) {
-  .sandbox-title {
-   font-size: 24px;
-   line-height: 32px;
-  }
-
-  .sandbox-actions-item {
-   flex-direction: column;
-   align-items: flex-start;
-  }
- }
-</style>
 
 <div class="sandbox-page">
  <div class="sandbox-top-actions">

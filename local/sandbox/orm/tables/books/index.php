@@ -1,45 +1,60 @@
 <?php
 
-use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
-use Bitrix\Main\UI\Extension;
+use Bitrix\Main\Loader;
+
+use Models\BooksForLessons\AuthorsTable as Authors;
+use Models\BooksForLessons\BookAuthorTable as BookAuthor;
+use Models\BooksForLessons\BookPublisherTable as BookPublisher;
+use Models\BooksForLessons\BooksTable as Books;
+use Models\BooksForLessons\BookStoreTable as BookStore;
+use Models\BooksForLessons\PublishersTable as Publishers;
+use Models\BooksForLessons\StoresTable as Stores;
+use Models\BooksForLessons\WikiprofilesTable as Wikiprofiles;
 
 require($_SERVER['DOCUMENT_ROOT'] . '/bitrix/header.php');
-
 $APPLICATION->SetTitle('Books - интерфейс');
-Asset::getInstance()->addCss('/local/sandbox/style.css');
 
-if (Loader::includeModule('ui')) {
- Extension::load([
-  'ui.buttons',
-  'ui.fonts.opensans',
- ]);
-}
+Loader::includeModule('books');
+Loader::includeModule('authors');
+Loader::includeModule('publishers');
+Loader::includeModule('stores');
+Loader::includeModule('book_publisher');
+Loader::includeModule('book_store');
+Loader::includeModule('wikiprofiles');
+Loader::includeModule('book_author');
 
-require_once $_SERVER['DOCUMENT_ROOT'] . '/local/modules/BooksForLessons/install/db/mysql/index.php';
+$booksCollection = Books::getList([
+ // 'filter' => ['id' => 1],
+ 'select' => [
+  '*',
+  'AUTHOR'
+ ]
+])->fetchCollection();
 
-$installResult = null;
-$booksTableExists = false;
-
-global $DB;
-$booksTableExists = (bool)$DB->Query("SHOW TABLES LIKE 'books'")->Fetch();
-
-if (
- $_SERVER['REQUEST_METHOD'] === 'POST'
- && isset($_POST['install_books_table'])
- && check_bitrix_sessid()
-) {
- if (!$booksTableExists) {
-  $installer = new BooksForLessons();
-  $installResult = $installer->InstallDB();
-  $booksTableExists = !empty($installResult['success']);
- } else {
-  $installResult = [
-   'success' => true,
-   'message' => 'Таблица books уже существует.',
+dump($booksCollection);
+if ($booksCollection !== null) {
+ $booksCollectionItem = [];
+ foreach ($booksCollection as $key => $bookItem) {
+  $booksCollectionItem[] = [
+   'ID' => $bookItem->getId(),
+   'NAME' => $bookItem->getName(),
+   'TEXT' => $bookItem->getText(),
+   'PUBLISH_DATE' => $bookItem->getPublishDate()?->format('Y-m-d'),
+   'ISBN' => $bookItem->getIsbn(),
+   'AUTHOR_ID' => $bookItem->getAuthor()->getId(),
+   'AUTHOR_NAME' => $bookItem->getAuthor()->getName(),
+   'PUBLISHER_ID' => $bookItem->getPublisherId(),
+   'WIKIPROFILE_ID' => $bookItem->getWikiprofileId(),
   ];
+
+  dump($booksCollectionItem);
  }
 }
+
+
+
+Asset::getInstance()->addCss('/local/sandbox/style.css');
 
 $schemaCards = [
  [
@@ -101,36 +116,6 @@ $schemaCards = [
     Это интерфейсная заглушка для будущей ORM-песочницы по таблице <code>books</code>.
     Классы и запросы ты подключишь отдельно, здесь только структура страницы и ориентир по схеме.
    </p>
-
-   <form method="post" class="sandbox-study-card" style="margin-bottom: 20px;">
-    <?= bitrix_sessid_post() ?>
-    <div class="sandbox-study-badge">Installer</div>
-    <h2 class="sandbox-study-title">Установка таблиц books</h2>
-    <p class="sandbox-study-text">
-     Нажми кнопку, чтобы выполнить SQL-файл установки в текущей базе данных.
-    </p>
-    <?php if ($booksTableExists): ?>
-     <p class="sandbox-study-note" style="margin-bottom: 12px;">
-      Таблица <code>books</code> уже создана, повторная установка отключена.
-     </p>
-    <?php endif; ?>
-    <button type="submit" name="install_books_table" value="Y" class="ui-btn ui-btn-success ui-btn-round" <?= $booksTableExists ? 'disabled' : '' ?>>
-     Установить
-    </button>
-   </form>
-
-   <?php if (is_array($installResult)): ?>
-    <div class="sandbox-status <?= !empty($installResult['success']) ? 'sandbox-status--success' : 'sandbox-status--error' ?>">
-     <?= htmlspecialcharsbx((string)($installResult['message'] ?? '')) ?>
-    </div>
-
-    <?php if (!empty($installResult['errors'])): ?>
-     <div class="sandbox-study-card">
-      <div class="sandbox-study-badge">Ошибки</div>
-      <pre class="sandbox-study-code"><code><?= htmlspecialcharsbx(print_r($installResult['errors'], true)) ?></code></pre>
-     </div>
-    <?php endif; ?>
-   <?php endif; ?>
 
    <?php foreach ($schemaCards as $card): ?>
     <div class="sandbox-study-card">

@@ -20,6 +20,7 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
         'M' =>
         array (
             'Models\\HospitalClients\\' => 23,
+            'Models\\BooksForLessons\\' => 23,
         ),
         'L' =>
         array (
@@ -43,6 +44,10 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
         'Models\\HospitalClients\\' =>
         array (
             0 => __DIR__ . '/../..' . '/modules/HospitalClients/lib',
+        ),
+        'Models\\BooksForLessons\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/modules/BooksForLessons/lib',
         ),
         'Local\\' =>
         array (

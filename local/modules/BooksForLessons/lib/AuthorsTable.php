@@ -1,6 +1,6 @@
 <?php
 
-namespace Bitrix\Authors;
+namespace Models\BooksForLessons;
 
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;

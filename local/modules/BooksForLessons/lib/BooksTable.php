@@ -1,6 +1,6 @@
 <?php
 
-namespace Bitrix\Books;
+namespace Models\BooksForLessons;
 
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
@@ -9,6 +9,11 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
+
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Query\Join;
+use Models\BooksForLessons\AuthorsTable;
+
 
 /**
  * Class Table
@@ -87,6 +92,11 @@ class BooksTable extends DataManager
 				'wikiprofile_id',
 				[]
 			))->configureTitle(Loc::getMessage('_ENTITY_WIKIPROFILE_ID_FIELD')),
+			'AUTHOR' => (new Reference(
+				name: 'AUTHOR',
+				referenceEntity: AuthorsTable::class,
+				referenceFilter: Join::on('this.author_id', 'ref.id')
+			))->configureJoinType(type: 'inner'),
 		];
 	}
 

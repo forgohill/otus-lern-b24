@@ -1,6 +1,6 @@
 <?php
 
-namespace Bitrix\BookPublisher;
+namespace Models\BookPublisher;
 
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;

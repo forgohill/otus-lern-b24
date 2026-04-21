@@ -1,7 +1,6 @@
-
 <?php
 
-namespace Bitrix\Wikiprofiles;
+namespace Models\BooksForLessons;
 
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;

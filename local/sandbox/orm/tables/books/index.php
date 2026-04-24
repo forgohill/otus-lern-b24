@@ -25,34 +25,41 @@ Loader::includeModule('wikiprofiles');
 Loader::includeModule('book_author');
 
 $booksCollection = Books::getList([
- // 'filter' => ['id' => 1],
  'select' => [
   '*',
-  'AUTHOR'
+  'AUTHORS',
+  'PUBLISHER',
+  'WIKIPROFILE',
  ]
 ])->fetchCollection();
 
-dump($booksCollection);
+$booksCollectionItem = [];
 if ($booksCollection !== null) {
- $booksCollectionItem = [];
  foreach ($booksCollection as $key => $bookItem) {
+
+  $authors = [];
+  foreach ($bookItem->getAuthors() as $key => $author) {
+   $authors[] = [
+    'AUTHOR_ID' => $author->getId(),
+    'AUTHOR_NAME' => $author->getName(),
+   ];
+  }
   $booksCollectionItem[] = [
    'ID' => $bookItem->getId(),
    'NAME' => $bookItem->getName(),
    'TEXT' => $bookItem->getText(),
    'PUBLISH_DATE' => $bookItem->getPublishDate()?->format('Y-m-d'),
    'ISBN' => $bookItem->getIsbn(),
-   'AUTHOR_ID' => $bookItem->getAuthor()->getId(),
-   'AUTHOR_NAME' => $bookItem->getAuthor()->getName(),
-   'PUBLISHER_ID' => $bookItem->getPublisherId(),
-   'WIKIPROFILE_ID' => $bookItem->getWikiprofileId(),
+   'AUTHORS' => $authors,
+   'PUBLISHER_ID' => $bookItem->getPublisher()->getId(),
+   'PUBLISHER_NAME' => $bookItem->getPublisher()->getName(),
+   'WIKIPROFILE_ID' => $bookItem->getWikiprofile()?->getId(),
+   'WIKIPROFILE_RU' => $bookItem->getWikiprofile()?->getWikiprofileRu(),
   ];
-
-  dump($booksCollectionItem);
  }
+
+ // dump($booksCollectionItem);
 }
-
-
 
 Asset::getInstance()->addCss('/local/sandbox/style.css');
 

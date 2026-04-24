@@ -11,9 +11,12 @@ use Bitrix\Main\ORM\Fields\TextField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
 
 use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
 use Bitrix\Main\ORM\Query\Join;
-use Models\BooksForLessons\AuthorsTable;
 
+use Models\BooksForLessons\AuthorsTable as Authors;
+use Models\BooksForLessons\PublishersTable as Publishers;
+use Models\BooksForLessons\WikiprofilesTable as Wikiprofile;
 
 /**
  * Class Table
@@ -97,6 +100,25 @@ class BooksTable extends DataManager
 				referenceEntity: AuthorsTable::class,
 				referenceFilter: Join::on('this.author_id', 'ref.id')
 			))->configureJoinType(type: 'inner'),
+
+			(new ManyToMany('AUTHORS', Authors::class))
+				->configureTableName('book_author')
+				->configureLocalPrimary('id', 'book_id')
+				->configureLocalReference('BOOKS')
+				->configureRemotePrimary('id', 'author_id')
+				->configureRemoteReference('AUTHORS'),
+
+			// (new Reference('PUBLISHER', Publisher::class, Join::on('this.publisher_id', 'ref.id')))
+			// 	->configureJoinType('inner'),
+			(new ManyToMany('PUBLISHERS', Publishers::class))
+				->configureTableName('book_publisher')
+				->configureLocalPrimary('id', 'book_id')
+				->configureLocalReference('BOOKS')
+				->configureRemotePrimary('id', 'publisher_id')
+				->configureRemoteReference('PUBLISHERS'),
+
+			(new Reference('WIKIPROFILE', Wikiprofile::class, Join::on('this.wikiprofile_id', 'ref.id')))
+				->configureJoinType('inner')
 		];
 	}
 

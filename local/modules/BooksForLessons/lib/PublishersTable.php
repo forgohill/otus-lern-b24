@@ -8,6 +8,13 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
 
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
+use Bitrix\Main\ORM\Query\Join;
+
+use Models\BooksForLessons\BooksTable as Books;
+
+
 /**
  * Class Table
  * 
@@ -52,6 +59,12 @@ class PublishersTable extends DataManager
 					'validation' => [__CLASS__, 'validateName']
 				]
 			))->configureTitle(Loc::getMessage('_ENTITY_NAME_FIELD')),
+			(new ManyToMany('BOOKS', Books::class))
+				->configureTableName('book_publisher')
+				->configureLocalPrimary('id', 'publisher_id')
+				->configureLocalReference('PUBLISHERS')
+				->configureRemotePrimary('id', 'book_id')
+				->configureRemoteReference('BOOKS'),
 		];
 	}
 

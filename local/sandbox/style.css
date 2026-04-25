@@ -226,6 +226,31 @@ body {
  display: block;
 }
 
+.sandbox-reference-table {
+ width: 100%;
+ border-collapse: collapse;
+ font-size: 14px;
+ line-height: 22px;
+ color: #1f2d3d;
+}
+
+.sandbox-reference-table th,
+.sandbox-reference-table td {
+ padding: 12px 14px;
+ border: 1px solid #dfe5ec;
+ vertical-align: top;
+ text-align: left;
+}
+
+.sandbox-reference-table th {
+ background: #f6f8fb;
+ font-weight: 600;
+}
+
+.sandbox-reference-table tbody tr:nth-child(even) {
+ background: #fafbfd;
+}
+
 .sandbox-study-note {
  margin: 0;
  padding: 12px 14px;

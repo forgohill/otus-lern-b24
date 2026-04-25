@@ -100,7 +100,7 @@ class BooksTable extends DataManager
 				name: 'AUTHOR',
 				referenceEntity: AuthorsTable::class,
 				referenceFilter: Join::on('this.author_id', 'ref.id')
-			))->configureJoinType(type: 'inner'),
+			))->configureJoinType(type: 'left'),
 
 			(new ManyToMany('AUTHORS', Authors::class))
 				->configureTableName('book_author')
@@ -117,10 +117,10 @@ class BooksTable extends DataManager
 				->configureRemoteReference('STORES'),
 
 			(new Reference('PUBLISHER', Publisher::class, Join::on('this.publisher_id', 'ref.id')))
-				->configureJoinType('inner'),
+				->configureJoinType('left'),
 
 			(new Reference('WIKIPROFILE', Wikiprofile::class, Join::on('this.wikiprofile_id', 'ref.id')))
-				->configureJoinType('inner')
+				->configureJoinType('left')
 		];
 	}
 

@@ -70,7 +70,7 @@ class WikiprofilesTable extends DataManager
 			))->configureTitle(Loc::getMessage('_ENTITY_BOOK_ID_FIELD')),
 
 			(new Reference('BOOK', Book::class, Join::on('this.book_id', 'ref.id')))
-				->configureJoinType('inner'),
+				->configureJoinType('left'),
 		];
 	}
 

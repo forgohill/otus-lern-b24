@@ -58,7 +58,7 @@ class PublishersTable extends DataManager
 				]
 			))->configureTitle(Loc::getMessage('_ENTITY_NAME_FIELD')),
 			(new OneToMany('BOOKS', Books::class, 'PUBLISHER'))
-				->configureJoinType('inner')
+				->configureJoinType('left')
 		];
 	}
 

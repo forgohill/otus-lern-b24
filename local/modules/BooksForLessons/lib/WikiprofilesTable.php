@@ -8,6 +8,10 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
 
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Models\BooksForLessons\BooksTable as Book;
+use Bitrix\Main\ORM\Query\Join;
+
 /**
  * Class Table
  * 
@@ -64,6 +68,9 @@ class WikiprofilesTable extends DataManager
 				'book_id',
 				[]
 			))->configureTitle(Loc::getMessage('_ENTITY_BOOK_ID_FIELD')),
+
+			(new Reference('BOOK', Book::class, Join::on('this.book_id', 'ref.id')))
+				->configureJoinType('inner'),
 		];
 	}
 

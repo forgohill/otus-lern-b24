@@ -8,29 +8,27 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
 
-use Bitrix\Main\ORM\Fields\Relations\Reference;
-use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
-use Bitrix\Main\ORM\Query\Join;
+use Bitrix\Main\ORM\Fields\Relations\OneToMany;
 
 use Models\BooksForLessons\BooksTable as Books;
 
 
 /**
- * Class Table
- * 
+ * ORM-модель таблицы `publishers`.
+ *
  * Fields:
  * <ul>
  * <li> id int mandatory
  * <li> name string(50) optional
  * </ul>
  *
- * @package Bitrix\
+ * @package Models\BooksForLessons
  **/
 
 class PublishersTable extends DataManager
 {
 	/**
-	 * Returns DB table name for entity.
+	 * Возвращает имя таблицы БД для сущности.
 	 *
 	 * @return string
 	 */
@@ -40,7 +38,7 @@ class PublishersTable extends DataManager
 	}
 
 	/**
-	 * Returns entity map definition.
+	 * Возвращает описание полей и связей сущности.
 	 *
 	 * @return array
 	 */
@@ -59,17 +57,13 @@ class PublishersTable extends DataManager
 					'validation' => [__CLASS__, 'validateName']
 				]
 			))->configureTitle(Loc::getMessage('_ENTITY_NAME_FIELD')),
-			(new ManyToMany('BOOKS', Books::class))
-				->configureTableName('book_publisher')
-				->configureLocalPrimary('id', 'publisher_id')
-				->configureLocalReference('PUBLISHERS')
-				->configureRemotePrimary('id', 'book_id')
-				->configureRemoteReference('BOOKS'),
+			(new OneToMany('BOOKS', Books::class, 'PUBLISHER'))
+				->configureJoinType('inner')
 		];
 	}
 
 	/**
-	 * Returns validators for name field.
+	 * Возвращает валидаторы для поля `name`.
 	 *
 	 * @return array
 	 */

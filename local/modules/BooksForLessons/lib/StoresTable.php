@@ -5,8 +5,11 @@ namespace Models\BooksForLessons;
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\IntegerField;
+use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
+
+use Models\BooksForLessons\BooksTable as Books;
 
 /**
  * Class Table
@@ -46,14 +49,21 @@ class StoresTable extends DataManager
 			))->configureTitle(Loc::getMessage('_ENTITY_ID_FIELD'))
 				->configurePrimary(true)
 				->configureAutocomplete(true),
-			'name' => (new StringField(
-				'name',
-				[
-					'validation' => [__CLASS__, 'validateName']
-				]
-			))->configureTitle(Loc::getMessage('_ENTITY_NAME_FIELD')),
-		];
-	}
+				'name' => (new StringField(
+					'name',
+					[
+						'validation' => [__CLASS__, 'validateName']
+					]
+				))->configureTitle(Loc::getMessage('_ENTITY_NAME_FIELD')),
+
+				(new ManyToMany('BOOKS', Books::class))
+					->configureTableName('book_store')
+					->configureLocalPrimary('id', 'store_id')
+					->configureLocalReference('STORES')
+					->configureRemotePrimary('id', 'book_id')
+					->configureRemoteReference('BOOKS'),
+			];
+		}
 
 	/**
 	 * Returns validators for name field.

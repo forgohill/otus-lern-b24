@@ -15,12 +15,13 @@ use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
 use Bitrix\Main\ORM\Query\Join;
 
 use Models\BooksForLessons\AuthorsTable as Authors;
-use Models\BooksForLessons\PublishersTable as Publishers;
+use Models\BooksForLessons\PublishersTable as Publisher;
+use Models\BooksForLessons\StoresTable as Stores;
 use Models\BooksForLessons\WikiprofilesTable as Wikiprofile;
 
 /**
- * Class Table
- * 
+ * ORM-модель таблицы `books`.
+ *
  * Fields:
  * <ul>
  * <li> id int mandatory
@@ -33,13 +34,13 @@ use Models\BooksForLessons\WikiprofilesTable as Wikiprofile;
  * <li> wikiprofile_id int optional
  * </ul>
  *
- * @package Bitrix\
+ * @package Models\BooksForLessons
  **/
 
 class BooksTable extends DataManager
 {
 	/**
-	 * Returns DB table name for entity.
+	 * Возвращает имя таблицы БД для сущности.
 	 *
 	 * @return string
 	 */
@@ -49,7 +50,7 @@ class BooksTable extends DataManager
 	}
 
 	/**
-	 * Returns entity map definition.
+	 * Возвращает описание полей и связей сущности.
 	 *
 	 * @return array
 	 */
@@ -108,14 +109,15 @@ class BooksTable extends DataManager
 				->configureRemotePrimary('id', 'author_id')
 				->configureRemoteReference('AUTHORS'),
 
-			// (new Reference('PUBLISHER', Publisher::class, Join::on('this.publisher_id', 'ref.id')))
-			// 	->configureJoinType('inner'),
-			(new ManyToMany('PUBLISHERS', Publishers::class))
-				->configureTableName('book_publisher')
+			(new ManyToMany('STORES', Stores::class))
+				->configureTableName('book_store')
 				->configureLocalPrimary('id', 'book_id')
 				->configureLocalReference('BOOKS')
-				->configureRemotePrimary('id', 'publisher_id')
-				->configureRemoteReference('PUBLISHERS'),
+				->configureRemotePrimary('id', 'store_id')
+				->configureRemoteReference('STORES'),
+
+			(new Reference('PUBLISHER', Publisher::class, Join::on('this.publisher_id', 'ref.id')))
+				->configureJoinType('inner'),
 
 			(new Reference('WIKIPROFILE', Wikiprofile::class, Join::on('this.wikiprofile_id', 'ref.id')))
 				->configureJoinType('inner')
@@ -123,7 +125,7 @@ class BooksTable extends DataManager
 	}
 
 	/**
-	 * Returns validators for name field.
+	 * Возвращает валидаторы для поля `name`.
 	 *
 	 * @return array
 	 */
@@ -135,7 +137,7 @@ class BooksTable extends DataManager
 	}
 
 	/**
-	 * Returns validators for ISBN field.
+	 * Возвращает валидаторы для поля `ISBN`.
 	 *
 	 * @return array
 	 */

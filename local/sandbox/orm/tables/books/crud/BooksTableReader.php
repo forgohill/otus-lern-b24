@@ -4,6 +4,25 @@ use Models\BooksForLessons\BooksTable as Books;
 
 class BooksTableReader
 {
+    public function getBookById(int $bookId): ?object
+    {
+        if ($bookId <= 0) {
+            return null;
+        }
+
+        $book = Books::getByPrimary($bookId, [
+            'select' => [
+                '*',
+                'AUTHORS',
+                'STORES',
+                'PUBLISHER',
+                'WIKIPROFILE',
+            ],
+        ])->fetchObject();
+
+        return $book ?: null;
+    }
+
     public function getBooksCollectionItems(): array
     {
         $booksCollection = Books::getList([

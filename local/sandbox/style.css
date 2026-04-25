@@ -262,6 +262,245 @@ body {
  color: #4a5568;
 }
 
+.sandbox-book-grid {
+ display: grid;
+ grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+ gap: 16px;
+ margin-bottom: 20px;
+}
+
+.sandbox-book-card {
+ border: 1px solid #dfe5ec;
+ border-radius: 16px;
+ background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
+ padding: 18px;
+ box-shadow: 0 1px 0 rgba(31, 45, 61, 0.03);
+}
+
+.sandbox-book-card-header {
+ display: flex;
+ justify-content: space-between;
+ align-items: flex-start;
+ gap: 12px;
+ margin-bottom: 12px;
+}
+
+.sandbox-book-title {
+ margin: 0 0 6px;
+ font-size: 18px;
+ line-height: 26px;
+ font-weight: 700;
+ color: #1f2d3d;
+}
+
+.sandbox-book-subtitle {
+ font-size: 13px;
+ line-height: 20px;
+ color: #6b7280;
+}
+
+.sandbox-book-edit-btn {
+ flex: 0 0 auto;
+ display: inline-flex;
+ align-items: center;
+ gap: 8px;
+ white-space: nowrap;
+}
+
+.sandbox-book-edit-icon {
+ font-size: 14px;
+ line-height: 1;
+}
+
+.sandbox-book-text {
+ margin: 0 0 14px;
+ font-size: 14px;
+ line-height: 22px;
+ color: #374151;
+}
+
+.sandbox-book-meta {
+ margin: 0;
+ display: grid;
+ gap: 12px;
+}
+
+.sandbox-book-meta div {
+ padding-top: 10px;
+ border-top: 1px solid #eef2f4;
+}
+
+.sandbox-book-meta dt {
+ margin: 0 0 3px;
+ font-size: 12px;
+ line-height: 18px;
+ font-weight: 600;
+ letter-spacing: 0.02em;
+ text-transform: uppercase;
+ color: #6b7280;
+}
+
+.sandbox-book-meta dd {
+ margin: 0;
+ font-size: 14px;
+ line-height: 22px;
+ color: #1f2d3d;
+ word-break: break-word;
+}
+
+.sandbox-book-popup {
+ width: 100%;
+ height: 100%;
+ min-height: 760px;
+}
+
+.sandbox-book-popup-loading {
+ padding: 24px;
+ font-size: 14px;
+ line-height: 22px;
+ color: #525c69;
+}
+
+.sandbox-book-popup-frame {
+ width: 100%;
+ height: 100%;
+ min-height: 760px;
+ border: 0;
+}
+
+.sandbox-book-edit-page {
+ max-width: 1100px;
+}
+
+.sandbox-book-edit-hero {
+ display: flex;
+ justify-content: space-between;
+ align-items: flex-start;
+ gap: 16px;
+ margin-bottom: 20px;
+ padding: 18px 20px;
+ border: 1px solid #dfe5ec;
+ border-radius: 14px;
+ background: linear-gradient(180deg, #ffffff 0%, #f9fbfd 100%);
+}
+
+.sandbox-book-edit-kicker {
+ margin-bottom: 6px;
+ font-size: 12px;
+ line-height: 18px;
+ font-weight: 600;
+ letter-spacing: 0.04em;
+ text-transform: uppercase;
+ color: #6b7280;
+}
+
+.sandbox-book-edit-title {
+ margin: 0 0 4px;
+ font-size: 24px;
+ line-height: 32px;
+ font-weight: 700;
+ color: #1f2d3d;
+}
+
+.sandbox-book-edit-subtitle {
+ font-size: 14px;
+ line-height: 22px;
+ color: #6b7280;
+}
+
+.sandbox-book-form {
+ display: grid;
+ gap: 16px;
+}
+
+.sandbox-book-field {
+ display: grid;
+ gap: 8px;
+ padding: 16px;
+ border: 1px solid #eef2f4;
+ border-radius: 14px;
+ background: #fff;
+}
+
+.sandbox-book-field-head {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ gap: 12px;
+}
+
+.sandbox-book-field-label {
+ display: inline-block;
+ font-size: 13px;
+ line-height: 20px;
+ font-weight: 600;
+ color: #2f3b47;
+}
+
+.sandbox-book-field-input,
+.sandbox-book-field-popup-input {
+ width: 100%;
+ border: 1px solid #dfe5ec;
+ border-radius: 10px;
+ padding: 10px 12px;
+ font-size: 14px;
+ line-height: 20px;
+ color: #1f2d3d;
+ background: #fff;
+ box-sizing: border-box;
+}
+
+.sandbox-book-field-textarea,
+.sandbox-book-field-popup-textarea {
+ resize: vertical;
+ min-height: 100px;
+}
+
+.sandbox-book-form-actions {
+ display: flex;
+ justify-content: flex-end;
+ margin-top: 4px;
+}
+
+.sandbox-book-field-edit-btn {
+ flex: 0 0 auto;
+ display: inline-flex;
+ align-items: center;
+ gap: 8px;
+ white-space: nowrap;
+}
+
+.sandbox-book-field-edit-icon {
+ font-size: 14px;
+ line-height: 1;
+}
+
+.sandbox-book-field-popup {
+ padding: 4px 2px 2px;
+}
+
+.sandbox-book-field-popup-title {
+ margin-bottom: 14px;
+ font-size: 18px;
+ line-height: 26px;
+ font-weight: 700;
+ color: #1f2d3d;
+}
+
+.sandbox-book-field-popup-editor {
+ margin-bottom: 16px;
+}
+
+.sandbox-book-field-popup-actions {
+ display: flex;
+ justify-content: flex-end;
+ gap: 10px;
+}
+
+.sandbox-book-field-popup-input {
+ min-height: 40px;
+}
+
 @media (max-width: 768px) {
  .sandbox-title {
   font-size: 24px;
@@ -284,5 +523,18 @@ body {
 
  .sandbox-study-body {
   padding: 18px;
+ }
+
+ .sandbox-book-form {
+  grid-template-columns: 1fr;
+ }
+
+ .sandbox-book-edit-hero {
+  flex-direction: column;
+ }
+
+ .sandbox-book-field-head {
+  flex-direction: column;
+  align-items: flex-start;
  }
 }

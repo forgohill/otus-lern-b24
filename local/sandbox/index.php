@@ -18,6 +18,26 @@ if (Loader::includeModule('ui')) {
 
 $sandboxSections = [
  [
+  'title' => 'Таблицы БД через ORM',
+  'items' => [
+   [
+    'label' => 'Описание таблицы',
+    'description' => 'DataManager-класс, карта полей и подключение собственной таблицы БД.',
+    'url' => '/local/sandbox/orm/tables/',
+   ],
+   [
+    'label' => 'Books: интерфейс',
+    'description' => 'Заготовка страницы для схемы books и связанных таблиц без подключения ORM-класса.',
+    'url' => '/local/sandbox/orm/tables/books/',
+   ],
+   [
+    'label' => 'CRUD-запросы',
+    'description' => 'Добавление, выборка, обновление и удаление записей через D7 ORM.',
+    'url' => '/local/sandbox/orm/tables/crud/',
+   ],
+  ],
+ ],
+ [
   'title' => 'Инфоблоки - списки',
   'items' => [
    [
@@ -82,26 +102,7 @@ $sandboxSections = [
    ],
   ],
  ],
- [
-  'title' => 'Таблицы БД через ORM',
-  'items' => [
-   [
-    'label' => 'Описание таблицы',
-    'description' => 'DataManager-класс, карта полей и подключение собственной таблицы БД.',
-    'url' => '/local/sandbox/orm/tables/',
-   ],
-   [
-    'label' => 'Books: интерфейс',
-    'description' => 'Заготовка страницы для схемы books и связанных таблиц без подключения ORM-класса.',
-    'url' => '/local/sandbox/orm/tables/books/',
-   ],
-   [
-    'label' => 'CRUD-запросы',
-    'description' => 'Добавление, выборка, обновление и удаление записей через D7 ORM.',
-    'url' => '/local/sandbox/orm/tables/crud/',
-   ],
-  ],
- ],
+
  // [
  //  'title' => 'Отладка',
  //  'items' => [

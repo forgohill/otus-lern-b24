@@ -1,1466 +1,487 @@
+# Архитектура учебного проекта Bitrix D7 ORM для музейных JSON-данных
 
-Да, здесь лучше делать **не одну большую таблицу**, а учебную нормализованную схему.
+## Executive summary
 
-Я посмотрел оба файла:
+Для этого ДЗ я рекомендую **не пытаться нормализовать весь музейный каталог сразу**, а сделать **главной сущностью собственную SQL-таблицу экспонатов** и связать её с **двумя или тремя инфоблоками**. Практически лучший вариант для сдачи — таблица `otus_museum_masterpieces` плюс инфоблоки `museum_buildings`, `museum_halls` и, как аккуратный третий справочник, `museum_types`. Это напрямую закрывает требования задания: своя таблица, ORM-модель, числовые/строковые/связываемые поля, минимум два инфоблока, выборка из SQL вместе со свойствами элементов инфоблоков, а также понятное место для `Reference`, `Join::on()` и `registerRuntimeField()`. Требования самого ДЗ и ограничения по данным явно тянут именно к такой архитектуре. fileciteturn3file14 fileciteturn3file11 citeturn4view0turn2view0turn2view2turn8view0
 
-* `masterpieces.json` — 97 объектов. Главная сущность: музейный предмет/экспонат. Внутри есть `path`, `year`, `inv_num`, `type.ru`, `country.ru`, `period.name.ru`, `name.ru`, `material.ru`, `building`, `hall`, `gallery`, `authors`, `collectors` и другие поля. 
-* `buildings.json` — 11 зданий. Там есть здания, расписание, этажи, залы, экспозиции, картинки, адреса и тексты. Например, здание `116` содержит `schedule`, `name.ru`, `menu.ru`, `brief.ru`, `floors`, `halls`. 
+По содержимому файлов картина очень показательная: в `masterpieces.json` — **97 записей экспонатов**, в `buildings.json` — **11 записей зданий**; из них у **4 зданий** есть вложенные этажи и залы, всего **11 этажей** и **61 зал**. В самих экспонатах у **70** записей есть ссылка на здание, у **31** — непустая ссылка на зал. При этом все непустые `building` и `hall` из экспонатов разрешаются в `buildings.json`, то есть связь между файлами хорошая, но поля связей должны быть **nullable**, потому что часть записей зал не содержит вовсе. Также важно, что поле `year` бывает отрицательным, поэтому его нельзя делать `UNSIGNED`: нужен **signed INT**. Эти наблюдения получаются при просмотре файлов целиком, а не только первых объектов. fileciteturn2file1 fileciteturn2file2
 
-## Главная мысль
+Главные кандидаты на **второй этап**, а не на первую сдаваемую версию, — это `authors`, `collectors`, `gallery`, `schedule`, `origplace`, `shop` и часть текстовых HTML-полей. Причина простая: эти данные либо неоднородны по типам, либо слишком богаты и вложены, либо редко заполнены. Для учебной сдачи лучше показать чистую и понятную модель, чем утонуть в переусложнении. fileciteturn3file0 fileciteturn3file1 fileciteturn3file8
 
-Главная таблица должна быть:
+## Карта данных
 
-```text
-museum_masterpieces
+Исходные JSON очень похожи на витринные данные каталога entity["point_of_interest","ГМИИ им. А. С. Пушкина","Moscow, Russia"] и хорошо подходят для учебного проекта на платформе entity["company","1C-Битрикс","software vendor"]: один файл описывает экспонаты, второй — здания, этажи, залы и связанные с ними контентные блоки. Важное ограничение из постановки: использовать нужно только `ru`, `en` можно игнорировать. fileciteturn3file14
+
+### Что находится в `masterpieces.json`
+
+Это каталог музейных предметов, где **один JSON-объект = один экспонат**. На верхнем уровне у записей встречается **42 поля**. Почти у всех объектов есть стабильное ядро: `path`, `m_parent_id`, `year`, `get_year`, `inv_num`, `type`, `country`, `period`, `masterpiece`, `show_in_hall`, `show_in_collection`, `name`, `gallery`, `cast`. Именно эти поля разумно считать базой для главной таблицы. fileciteturn2file2
+
+По типам данных файл неоднороден, но закономерен:
+
+| Группа | Примеры | Практический вывод |
+|---|---|---|
+| Строковые скаляры | `path`, `m_parent_id`, `inv_num`, `department`, `building`, `hall` | годятся для SQL-колонок или для source-map |
+| Числовые | `year`, `show_in_collection` | `year` должен быть signed |
+| Булевы по смыслу, но не по типу | `masterpiece`, `show_in_hall`, `cast` | при импорте нормализовать в `TINYINT(1)` |
+| Локализованные объекты `ru/en` | `type`, `country`, `name`, `size`, `text`, `annotation`, `material` | для первой версии брать только `ru` |
+| Вложенные объекты | `period.name`, `period.text`, `gallery`, `authors`, `collectors`, `origplace` | кандидаты на отдельные сущности или отложенный этап |
+
+Эта типология подтверждается примерами из файла: у экспоната может быть `building = "116"` и `hall = "191"`, `gallery` с вложенными `id01/id02/id03`, пустая строка в `authors`, либо объект `authors.1.ru`, а у слепков дополнительно появляется `origplace`. fileciteturn2file2 fileciteturn3file5 fileciteturn3file7 fileciteturn3file8
+
+Статистически полезно разделить поля так. **Почти всегда заполнены**: `name`, `inv_num`, `year`, `type`, `country`, `period`, `gallery`. **Часто заполнены, но не всегда**: `authors` (74 из 97), `building` (70 из 97), `size` (90 из 97), `searcha` (58 из 97), `material` (55 из 97), `paint_school` (51 из 97), `text` (49 из 97). **Редкие**: `collectors` (19), `from` (15), `namecom` (9), `graphics_type` (8), `link` и `linktext` (по 4), `origplace` и `shop` (по 2). **Полностью пустые в этом наборе**: `audioguide`, `videoguide`, `litra`, `restor`, `producein`, `matvos`, `sizevos`, `prodcast`, `makers`. Для первой версии это сильный аргумент не тащить их в схему. fileciteturn2file2
+
+Самые важные “грязные” поля такие: `authors` бывает и пустой строкой, и объектом; `collectors` — так же; `get_year` бывает и числом, и строкой; `show_in_hall` бывает и `0/1` как `int`, и `"0"/"1"` как `string`; `paint_school` и `graphics_type` иногда объект, иногда пустая строка; `shop` почти всегда пустая строка, но местами словарь идентификаторов. Это значит, что на импорте нужен **нормализующий слой**, а не прямое `json_decode()` → `add()`. fileciteturn2file2 fileciteturn3file6
+
+### Что находится в `buildings.json`
+
+Это не просто справочник зданий, а довольно богатый контентный файл о музейных пространствах. На верхнем уровне у записей встречается **30 полей**: от `name`, `menu`, `brief`, `text`, `adress`, `picture` и `yamapcoords` до `schedule`, `floors`, `virtual_tour`, `audiog`, `rules` и `ticket`. Здесь явно много данных, которые естественно живут как контент, а не как голые справочники. fileciteturn2file1
+
+Особенно важны три вложенные структуры:
+
+- `schedule` — объект `regulars` + `exceptions`, но само поле бывает и объектом, и пустой строкой; внутри `exceptions` значение бывает либо `"closed"`, либо объектом `{timebegin, timeend}`. fileciteturn3file1 fileciteturn3file2
+- `floors` — либо пустая строка, либо словарь этажей; этаж содержит `number`, `name`, `plan`, `halls`. fileciteturn3file0 fileciteturn3file3
+- `halls` — внутри этажа; зал содержит `number`, `img`, `img_header`, `virtual_tour`, `exposition`, `satellites`, `name`, `short`, `text`, `searcha`, `seakeys`. fileciteturn3file0 fileciteturn3file3
+
+Для учебной архитектуры это очень хороший кандидат на **инфоблоки**, потому что здание и зал — это редакторский контент с текстами, картинками, виртуальными турами и навигационными свойствами, а не только системные справочники. При этом поле `floors` заполнено лишь у части зданий, значит этаж в минимальной версии стоит делать **свойством зала**, а не отдельной сущностью. fileciteturn2file1 fileciteturn3file0
+
+### Какие сущности выделяются и какие связи есть
+
+Из двух файлов естественно выделяются такие сущности:
+
+- **Masterpiece** — экспонат, главная сущность проекта.
+- **Building** — здание музея.
+- **Hall** — зал.
+- **Floor** — этаж.
+- **Type** — тип экспоната.
+- **Person** — автор или коллекционер.
+- **Image** — изображение экспоната.
+- **Schedule item** — правило расписания по зданию.
+- **Period / Country / Paint school** — справочники, но не обязательные на первом этапе.
+
+Связи при этом читаются очень ясно: `masterpiece.building -> buildings[id]`, `masterpiece.hall -> halls[id]`, а зал сам принадлежит зданию через вложенность файла `buildings.json`. Кроме того, один экспонат может иметь несколько авторов и несколько изображений; это уже не минимальная, а расширенная модель. fileciteturn2file1 fileciteturn2file2
+
+## Рекомендуемая модель хранения
+
+Ниже — схема, которая одновременно отвечает структуре данных и требованиям ДЗ. Таблица построена по полному анализу обоих JSON и по ограничениям задания. fileciteturn3file14 fileciteturn2file1 fileciteturn2file2
+
+| Сущность | Источник в JSON | Тип хранения | Назначение | Почему так |
+|---|---|---|---|---|
+| Экспонат | `masterpieces.json` | SQL-таблица | Главная сущность проекта | Это и есть “своя таблица БД”, вокруг которой строится ДЗ |
+| Здание | `buildings.json` | инфоблок | Контент по зданию, адрес, тексты, картинки, расписание-сводка | Хорошо редактируется в админке, удобно тянуть свойства в списке |
+| Зал | `buildings.json -> floors -> halls` | инфоблок | Название зала, номер, этаж, привязка к зданию | Это второй обязательный инфоблок и естественный справочник |
+| Тип экспоната | `masterpieces.json -> type.ru` | инфоблок | Третий, аккуратный справочник | Мало значений, одно значение на экспонат, хорошо закрывает “2–3 инфоблока” |
+| Этаж | `buildings.json -> floors` | свойство инфоблока зала | Для первой версии достаточно `FLOOR_NUMBER`, `FLOOR_SOURCE_ID` | Отдельная сущность здесь пока тяжеловата |
+| Страна | `masterpieces.json -> country.ru` | поле SQL или отложенный справочник | Для вывода в списке | Справочник страны можно сделать позже |
+| Период | `masterpieces.json -> period.*` | поле SQL | Человеко-читаемый период | Значения уже строковые и нередко “грязные” для строгой нормализации |
+| Автор / коллекционер | `authors`, `collectors` | отложить на второй этап / связующая таблица | Для ManyToMany и ролей | Поле неоднородно, есть множественность и роль |
+| Изображения | `gallery` | в минимуме — поле SQL `first_image_path`; в расширении — отдельная SQL-таблица | Для списка и галереи | В минимуме надо только первое изображение |
+| Расписание | `schedule` | отложить на второй этап / SQL-таблицы | Для продвинутого интерфейса | Слишком сложная вложенная структура для первой сдачи |
+| `origplace`, `shop`, `department`, `link*` | редкие поля | отложить на второй этап | Дополнительные функции | Редко заполнены или семантически неочевидны |
+
+**Главная таблица**: `otus_museum_masterpieces`.  
+**Лучшие инфоблоки для первой версии**: `museum_buildings`, `museum_halls`, `museum_types`.  
+**Лучшие отдельные SQL-таблицы на втором этапе**: `museum_masterpiece_details`, `museum_masterpiece_images`, `museum_persons`, `museum_masterpiece_persons`, `museum_building_schedule_regular`, `museum_building_schedule_exceptions`. fileciteturn3file11 fileciteturn3file12
+
+```mermaid
+flowchart LR
+    M[otus_museum_masterpieces]
+    B[museum_buildings]
+    H[museum_halls]
+    T[museum_types]
+
+    M -->|building_element_id| B
+    M -->|hall_element_id| H
+    M -->|type_element_id| T
+    H -->|PROPERTY BUILDING_REF| B
 ```
 
-Это один экспонат из `masterpieces.json`.
+Эта минимальная схема хорошо совпадает с тем, как D7 ORM работает с собственными таблицами и с ORM-интеграцией инфоблоков: собственная таблица описывается через `DataManager` с `getTableName()` и `getMap()`, связи — через `Reference` и `Join::on()`, а каждый инфоблок при наличии `API_CODE` становится собственной ORM-сущностью. citeturn4view0turn2view0turn8view0turn8view1
 
-Все остальное — справочники, связи и дополнительные таблицы:
+## Вариант A для сдачи ДЗ
 
-```text
-museum_buildings
-museum_floors
-museum_halls
-museum_expositions
-museum_authors / museum_persons
-museum_masterpiece_persons
-museum_masterpiece_images
-museum_types
-museum_countries
-museum_periods
-```
+### Почему этот вариант подходит лучше всего
 
-То есть структура примерно такая:
+Это самый чистый и защищаемый вариант на сдаче. Он не спорит с формулировкой задания, а буквально её реализует: есть одна собственная SQL-таблица, есть 2–3 инфоблока, есть связи по ID, есть вывод списка, есть подтягивание свойств инфоблоков, и есть место показать `Reference` и `registerRuntimeField()`. Если вы принесёте слишком нормализованную схему сразу, преподаватель очень легко спросит: “А где здесь ваш **минимальный** учебный кейс с одной своей таблицей, привязанной к двум инфоблокам?” Здесь такого риска нет. fileciteturn3file14 fileciteturn3file11
 
-```text
-Здание
- └── Этаж
-      └── Зал
-           └── Экспонаты
+### Минимальная схема для ДЗ
 
-Экспонат
- ├── тип
- ├── страна
- ├── период
- ├── авторы
- ├── коллекционеры
- └── изображения
-```
+Рекомендую такую таблицу:
 
----
+**Таблица:** `otus_museum_masterpieces`
 
-# 1. Основные таблицы
+Ниже — поля, которые действительно нужны для учебной версии. Они закрывают числовой, строковый и связываемый типы, а также список вывода. Поля ссылаются на элементы инфоблоков не по source-id, а по **реальному ID элемента инфоблока**, а source-id сохраняются отдельно для повторного импорта. Такая схема следует и данным файлов, и учебной задаче. fileciteturn3file12 fileciteturn2file2
 
-## 1.1. `museum_masterpieces`
+| Поле | SQL тип | Источник | Зачем |
+|---|---|---|---|
+| `ID` | `INT UNSIGNED AI PK` | системное | первичный ключ |
+| `SOURCE_ID` | `INT UNSIGNED NOT NULL UNIQUE` | ключ объекта в `masterpieces.json` | защита от дублей при повторном импорте |
+| `NAME_RU` | `VARCHAR(255) NOT NULL` | `name.ru` | название экспоната |
+| `INV_NUM` | `VARCHAR(100) NOT NULL` | `inv_num` | инвентарный номер |
+| `YEAR_VALUE` | `INT NOT NULL` | `year` | год, signed из-за значений до н.э. |
+| `GET_YEAR` | `SMALLINT UNSIGNED NULL` | `get_year` | год поступления / получения |
+| `COUNTRY_RU` | `VARCHAR(100) NULL` | `country.ru` | страна для списка |
+| `PERIOD_NAME_RU` | `VARCHAR(150) NULL` | `period.name.ru` | период для краткого вывода |
+| `BUILDING_SOURCE_ID` | `INT UNSIGNED NULL` | `building` | исходная ссылка из JSON |
+| `HALL_SOURCE_ID` | `INT UNSIGNED NULL` | `hall` | исходная ссылка из JSON |
+| `BUILDING_ELEMENT_ID` | `INT UNSIGNED NULL` | после импорта инфоблоков | связь с `museum_buildings` |
+| `HALL_ELEMENT_ID` | `INT UNSIGNED NULL` | после импорта инфоблоков | связь с `museum_halls` |
+| `TYPE_ELEMENT_ID` | `INT UNSIGNED NULL` | после импорта типов | связь с `museum_types` |
+| `FIRST_IMAGE_PATH` | `VARCHAR(500) NULL` | первый путь из `gallery` | картинка в списке |
+| `DETAIL_PATH` | `VARCHAR(500) NOT NULL` | `path` | отладка, аудит, возможная ссылка |
+| `SHOW_IN_HALL` | `TINYINT(1) NOT NULL DEFAULT 0` | `show_in_hall` | булево-подобный флаг |
+| `SHOW_IN_COLLECTION` | `TINYINT(1) NOT NULL DEFAULT 1` | `show_in_collection` | булево-подобный флаг |
+| `IS_CAST` | `TINYINT(1) NOT NULL DEFAULT 0` | `cast` | булево-подобный флаг |
+| `CREATED_AT` | `DATETIME NOT NULL` | системное | аудит |
+| `UPDATED_AT` | `DATETIME NOT NULL` | системное | аудит |
 
-Главная таблица. Один ряд = один экспонат.
+**Где тут типы из ДЗ:**
 
-```sql
-CREATE TABLE museum_masterpieces (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+- **числовые поля**: `YEAR_VALUE`, `GET_YEAR`, флаги `SHOW_IN_HALL`, `SHOW_IN_COLLECTION`, `IS_CAST`;
+- **строковые поля**: `NAME_RU`, `INV_NUM`, `COUNTRY_RU`, `DETAIL_PATH`;
+- **связываемые поля**: `BUILDING_ELEMENT_ID`, `HALL_ELEMENT_ID`, `TYPE_ELEMENT_ID`.
 
-    source_id INT UNSIGNED NOT NULL,
-    source_parent_id INT UNSIGNED NULL,
+### Какие инфоблоки создать
 
-    building_id INT UNSIGNED NULL,
-    hall_id INT UNSIGNED NULL,
+Для первой версии я советую именно эти три:
 
-    type_id INT UNSIGNED NULL,
-    country_id INT UNSIGNED NULL,
-    period_id INT UNSIGNED NULL,
-    paint_school_id INT UNSIGNED NULL,
-    graphics_type_id INT UNSIGNED NULL,
+| Инфоблок | API_CODE | Назначение | Что хранить |
+|---|---|---|---|
+| Здания | `museum_buildings` | музейные здания | `NAME`, `DETAIL_TEXT`, `SOURCE_ID`, `ADDRESS_RU`, `MAP_COORDS`, `CLOSED_FLAG`, `TICKET_URL`, `PICTURE_PATH`, `TIMELINE_RU` |
+| Залы | `museum_halls` | залы музея | `NAME`, `DETAIL_TEXT`, `SOURCE_ID`, `BUILDING_REF`, `BUILDING_SOURCE_ID`, `FLOOR_SOURCE_ID`, `FLOOR_NUMBER`, `HALL_NUMBER`, `PLAN_PATH`, `IMAGE_PATH`, `VIRTUAL_TOUR_URL` |
+| Типы | `museum_types` | типы экспонатов | `NAME`, `TYPE_CODE` |
 
-    department_source_id INT UNSIGNED NULL,
+Практическая деталь: у инфоблоков обязательно задайте **`API_CODE`**, иначе удобной ORM-интеграции не будет. У `museum_halls` обязательно сделайте свойство-привязку `BUILDING_REF` к элементу инфоблока `museum_buildings`. Официальная документация прямо говорит, что ORM-интеграция инфоблоков строится вокруг `API_CODE`, где один инфоблок становится отдельной ORM-сущностью, а свойства становятся отношениями. citeturn8view0turn8view1
 
-    path VARCHAR(500) NULL,
-    inventory_number VARCHAR(100) NULL,
-
-    creation_year INT NULL,
-    acquisition_year VARCHAR(20) NULL,
-
-    name_ru VARCHAR(500) NOT NULL,
-    name_comment_ru VARCHAR(500) NULL,
-
-    period_text_ru VARCHAR(500) NULL,
-    size_ru VARCHAR(500) NULL,
-    material_ru TEXT NULL,
-
-    description_ru MEDIUMTEXT NULL,
-    annotation_ru MEDIUMTEXT NULL,
-
-    origin_ru TEXT NULL,
-    link_url VARCHAR(500) NULL,
-    link_text_ru VARCHAR(500) NULL,
-
-    search_text_ru MEDIUMTEXT NULL,
-    search_keywords_ru TEXT NULL,
-
-    is_masterpiece TINYINT(1) NOT NULL DEFAULT 0,
-    show_in_hall TINYINT(1) NOT NULL DEFAULT 0,
-    show_in_collection TINYINT(1) NOT NULL DEFAULT 0,
-    is_cast TINYINT(1) NOT NULL DEFAULT 0,
-
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-
-    UNIQUE KEY ux_museum_masterpieces_source_id (source_id),
-    KEY ix_museum_masterpieces_building_id (building_id),
-    KEY ix_museum_masterpieces_hall_id (hall_id),
-    KEY ix_museum_masterpieces_type_id (type_id),
-    KEY ix_museum_masterpieces_country_id (country_id),
-    KEY ix_museum_masterpieces_period_id (period_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-Почему так:
-
-* `source_id` — это ключ из JSON, например `3687`, `3675`, `4005`.
-* `id` — внутренний ID в нашей БД.
-* `building_id`, `hall_id` — связь с таблицами зданий и залов.
-* `type_id`, `country_id`, `period_id` — связи со справочниками.
-* `name_ru`, `description_ru`, `material_ru` — только русский интерфейс.
-* `description_ru` — это поле `text.ru`.
-* `annotation_ru` — это поле `annotation.ru`.
-
----
-
-# 2. Справочники
-
-## 2.1. Типы экспонатов
-
-Из поля:
-
-```json
-"type": {
-  "ru": "Живопись"
-}
-```
-
-```sql
-CREATE TABLE museum_types (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name_ru VARCHAR(255) NOT NULL,
-
-    UNIQUE KEY ux_museum_types_name_ru (name_ru)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-Примеры типов из файла:
-
-```text
-Живопись
-Графика
-Скульптура
-Археология
-Прикладное искусство
-Нумизматика
-Слепки
-```
-
----
-
-## 2.2. Страны
-
-Из поля:
-
-```json
-"country": {
-  "ru": "Франция"
-}
-```
+### SQL DDL
 
 ```sql
-CREATE TABLE museum_countries (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name_ru VARCHAR(255) NOT NULL,
-
-    UNIQUE KEY ux_museum_countries_name_ru (name_ru)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-## 2.3. Периоды
-
-В JSON период состоит из двух частей:
-
-```json
-"period": {
-  "name": {
-    "ru": "XIX век"
-  },
-  "text": {
-    "ru": "Около 1888"
-  }
-}
-```
-
-`period.name.ru` лучше вынести в справочник, а `period.text.ru` оставить в самом экспонате, потому что это уточнение конкретного предмета.
-
-```sql
-CREATE TABLE museum_periods (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name_ru VARCHAR(255) NOT NULL,
-
-    UNIQUE KEY ux_museum_periods_name_ru (name_ru)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-## 2.4. Художественная школа
-
-Из поля:
-
-```json
-"paint_school": {
-  "ru": "Франция"
-}
-```
-
-```sql
-CREATE TABLE museum_paint_schools (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name_ru VARCHAR(255) NOT NULL,
-
-    UNIQUE KEY ux_museum_paint_schools_name_ru (name_ru)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-## 2.5. Тип графики
-
-Из поля:
-
-```json
-"graphics_type": {
-  "ru": "Оригинальная графика"
-}
-```
-
-```sql
-CREATE TABLE museum_graphics_types (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    name_ru VARCHAR(255) NOT NULL,
-
-    UNIQUE KEY ux_museum_graphics_types_name_ru (name_ru)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-# 3. Здания, этажи, залы
-
-## 3.1. `museum_buildings`
-
-```sql
-CREATE TABLE museum_buildings (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    source_id INT UNSIGNED NOT NULL,
-    sort INT NULL,
-
-    path VARCHAR(500) NULL,
-    is_closed TINYINT(1) NOT NULL DEFAULT 0,
-
-    ticket_url VARCHAR(500) NULL,
-    picture_path VARCHAR(500) NULL,
-
-    map_zoom INT NULL,
-    latitude DECIMAL(10, 7) NULL,
-    longitude DECIMAL(10, 7) NULL,
-
-    app_number VARCHAR(50) NULL,
-    app_number_tablet VARCHAR(50) NULL,
-
-    name_ru VARCHAR(500) NOT NULL,
-    menu_ru VARCHAR(500) NULL,
-    brief_ru TEXT NULL,
-
-    text_ru MEDIUMTEXT NULL,
-    text_more_ru MEDIUMTEXT NULL,
-
-    address_ru TEXT NULL,
-    timeline_ru TEXT NULL,
-    rate_ru TEXT NULL,
-    tel_ru TEXT NULL,
-    excursions_ru TEXT NULL,
-    accessibility_ru TEXT NULL,
-    rules_ru TEXT NULL,
-    audioguide_ru TEXT NULL,
-
-    search_text_ru MEDIUMTEXT NULL,
-    search_keywords_ru TEXT NULL,
-
-    panorama_url VARCHAR(500) NULL,
-
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-
-    UNIQUE KEY ux_museum_buildings_source_id (source_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-Поле `yamapcoords` в JSON выглядит так:
-
-```text
-17,55.747272,37.605283
-```
-
-Его лучше разобрать на:
-
-```text
-map_zoom = 17
-latitude = 55.747272
-longitude = 37.605283
-```
-
----
-
-## 3.2. `museum_floors`
-
-```sql
-CREATE TABLE museum_floors (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    source_id INT UNSIGNED NOT NULL,
-    building_id INT UNSIGNED NOT NULL,
-
-    path VARCHAR(500) NULL,
-    number VARCHAR(50) NULL,
-    name_ru VARCHAR(255) NOT NULL,
-    plan_path VARCHAR(500) NULL,
-
-    UNIQUE KEY ux_museum_floors_source_id (source_id),
-    KEY ix_museum_floors_building_id (building_id),
-
-    CONSTRAINT fk_museum_floors_building
-        FOREIGN KEY (building_id)
-        REFERENCES museum_buildings(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-## 3.3. `museum_halls`
-
-```sql
-CREATE TABLE museum_halls (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    source_id INT UNSIGNED NOT NULL,
-    building_id INT UNSIGNED NOT NULL,
-    floor_id INT UNSIGNED NULL,
-
-    path VARCHAR(500) NULL,
-    number VARCHAR(50) NULL,
-
-    name_ru VARCHAR(500) NOT NULL,
-    short_ru MEDIUMTEXT NULL,
-    text_ru MEDIUMTEXT NULL,
-
-    img_path VARCHAR(500) NULL,
-
-    search_text_ru MEDIUMTEXT NULL,
-    search_keywords_ru TEXT NULL,
-
-    virtual_tour_start_ru VARCHAR(500) NULL,
-    virtual_tour_preview_pc VARCHAR(500) NULL,
-    virtual_tour_preview_mob VARCHAR(500) NULL,
-
-    UNIQUE KEY ux_museum_halls_source_id (source_id),
-    KEY ix_museum_halls_building_id (building_id),
-    KEY ix_museum_halls_floor_id (floor_id),
-
-    CONSTRAINT fk_museum_halls_building
-        FOREIGN KEY (building_id)
-        REFERENCES museum_buildings(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_museum_halls_floor
-        FOREIGN KEY (floor_id)
-        REFERENCES museum_floors(id)
-        ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-# 4. Экспозиции
-
-В `buildings.json` есть отдельный блок `exposition`. Также у залов есть список экспозиций.
-
-Значит нужна таблица экспозиций и связующая таблица залов с экспозициями.
-
-## 4.1. `museum_expositions`
-
-```sql
-CREATE TABLE museum_expositions (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    source_id INT UNSIGNED NOT NULL,
-    building_id INT UNSIGNED NULL,
-
-    path VARCHAR(500) NULL,
-    img_path VARCHAR(500) NULL,
-    circ_img_path VARCHAR(500) NULL,
-
-    name_ru VARCHAR(500) NOT NULL,
-    short_ru MEDIUMTEXT NULL,
-    text_ru MEDIUMTEXT NULL,
-
-    halls_list_header_ru TEXT NULL,
-
-    search_text_ru MEDIUMTEXT NULL,
-    search_keywords_ru TEXT NULL,
-
-    UNIQUE KEY ux_museum_expositions_source_id (source_id),
-    KEY ix_museum_expositions_building_id (building_id),
-
-    CONSTRAINT fk_museum_expositions_building
-        FOREIGN KEY (building_id)
-        REFERENCES museum_buildings(id)
-        ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-## 4.2. `museum_exposition_halls`
-
-Многие-ко-многим:
-
-```sql
-CREATE TABLE museum_exposition_halls (
-    exposition_id INT UNSIGNED NOT NULL,
-    hall_id INT UNSIGNED NOT NULL,
-
-    PRIMARY KEY (exposition_id, hall_id),
-
-    CONSTRAINT fk_museum_exposition_halls_exposition
-        FOREIGN KEY (exposition_id)
-        REFERENCES museum_expositions(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_museum_exposition_halls_hall
-        FOREIGN KEY (hall_id)
-        REFERENCES museum_halls(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-# 5. Авторы, коллекционеры, участники
-
-В `masterpieces.json` поля `authors` и `collectors` иногда пустая строка, а иногда объект:
-
-```json
-"authors": {
-  "1": {
-    "ru": "Поль Сезанн",
-    "comment": {
-      "ru": "автор"
-    }
-  }
-}
-```
-
-Это классическая связь **многие ко многим**:
-
-```text
-один экспонат может иметь несколько авторов
-один автор может быть связан с несколькими экспонатами
-```
-
-## 5.1. `museum_persons`
-
-```sql
-CREATE TABLE museum_persons (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    name_ru VARCHAR(500) NOT NULL,
-
-    UNIQUE KEY ux_museum_persons_name_ru (name_ru)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-## 5.2. `museum_masterpiece_persons`
-
-```sql
-CREATE TABLE museum_masterpiece_persons (
-    masterpiece_id INT UNSIGNED NOT NULL,
-    person_id INT UNSIGNED NOT NULL,
-
-    role VARCHAR(50) NOT NULL,
-    role_comment_ru VARCHAR(255) NULL,
-    sort INT UNSIGNED NOT NULL DEFAULT 500,
-
-    PRIMARY KEY (masterpiece_id, person_id, role),
-
-    KEY ix_museum_masterpiece_persons_person_id (person_id),
-    KEY ix_museum_masterpiece_persons_role (role),
-
-    CONSTRAINT fk_museum_masterpiece_persons_masterpiece
-        FOREIGN KEY (masterpiece_id)
-        REFERENCES museum_masterpieces(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_museum_masterpiece_persons_person
-        FOREIGN KEY (person_id)
-        REFERENCES museum_persons(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-Значения `role`:
-
-```text
-author
-collector
-maker
-```
-
----
-
-# 6. Изображения экспонатов
-
-В `gallery` у экспонатов структура такая:
-
-```json
-"gallery": {
-  "1": {
-    "id01": "/path/image_01.jpg",
-    "id02": "/path/image_02.jpg",
-    "id03": "/path/image_03.jpg"
-  }
-}
-```
-
-Это не надо хранить JSON-строкой в главной таблице. Лучше отдельная таблица.
-
-```sql
-CREATE TABLE museum_masterpiece_images (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    masterpiece_id INT UNSIGNED NOT NULL,
-
-    gallery_group INT UNSIGNED NOT NULL,
-    image_code VARCHAR(20) NOT NULL,
-    sort INT UNSIGNED NOT NULL DEFAULT 500,
-
-    path VARCHAR(500) NOT NULL,
-
-    KEY ix_museum_masterpiece_images_masterpiece_id (masterpiece_id),
-
-    CONSTRAINT fk_museum_masterpiece_images_masterpiece
-        FOREIGN KEY (masterpiece_id)
-        REFERENCES museum_masterpieces(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-Пример:
-
-```text
-gallery_group = 1
-image_code = id01
-path = /data/fonds/ancient_east/...
-```
-
----
-
-# 7. Расписание зданий
-
-В `buildings.json` у зданий есть регулярное расписание и исключения.
-
-## 7.1. Регулярное расписание
-
-```sql
-CREATE TABLE museum_building_schedule_regular (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    building_id INT UNSIGNED NOT NULL,
-
-    weekday_code VARCHAR(10) NOT NULL,
-    time_begin TIME NULL,
-    time_end TIME NULL,
-    is_closed TINYINT(1) NOT NULL DEFAULT 0,
-
-    UNIQUE KEY ux_museum_building_schedule_regular (building_id, weekday_code),
-
-    CONSTRAINT fk_museum_building_schedule_regular_building
-        FOREIGN KEY (building_id)
-        REFERENCES museum_buildings(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-`weekday_code`:
-
-```text
-mon
-tue
-wed
-thu
-fri
-sat
-sun
-```
-
-## 7.2. Исключения расписания
-
-```sql
-CREATE TABLE museum_building_schedule_exceptions (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    building_id INT UNSIGNED NOT NULL,
-
-    exception_date DATE NOT NULL,
-    time_begin TIME NULL,
-    time_end TIME NULL,
-    is_closed TINYINT(1) NOT NULL DEFAULT 0,
-
-    UNIQUE KEY ux_museum_building_schedule_exception (building_id, exception_date),
-
-    CONSTRAINT fk_museum_building_schedule_exceptions_building
-        FOREIGN KEY (building_id)
-        REFERENCES museum_buildings(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
----
-
-# 8. Дополнительные учебные таблицы для интерфейса
-
-Чтобы был не просто импорт, а нормальный учебный интерфейс, я бы добавил свои пользовательские таблицы.
-
-## 8.1. Заметки к экспонатам
-
-```sql
-CREATE TABLE museum_masterpiece_notes (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    masterpiece_id INT UNSIGNED NOT NULL,
-
-    title VARCHAR(255) NULL,
-    note_text TEXT NOT NULL,
-
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-
-    KEY ix_museum_masterpiece_notes_masterpiece_id (masterpiece_id),
-
-    CONSTRAINT fk_museum_masterpiece_notes_masterpiece
-        FOREIGN KEY (masterpiece_id)
-        REFERENCES museum_masterpieces(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-## 8.2. Теги
-
-```sql
-CREATE TABLE museum_tags (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-    name_ru VARCHAR(255) NOT NULL,
-
-    UNIQUE KEY ux_museum_tags_name_ru (name_ru)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-```sql
-CREATE TABLE museum_masterpiece_tags (
-    masterpiece_id INT UNSIGNED NOT NULL,
-    tag_id INT UNSIGNED NOT NULL,
-
-    PRIMARY KEY (masterpiece_id, tag_id),
-
-    CONSTRAINT fk_museum_masterpiece_tags_masterpiece
-        FOREIGN KEY (masterpiece_id)
-        REFERENCES museum_masterpieces(id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_museum_masterpiece_tags_tag
-        FOREIGN KEY (tag_id)
-        REFERENCES museum_tags(id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-```
-
-Это даст учебный CRUD:
-
-```text
-добавить заметку
-добавить тег
-прикрепить тег к экспонату
-отфильтровать экспонаты по тегам
-```
-
----
-
-# 9. Итоговая структура
-
-Минимальный хороший набор:
-
-```text
-museum_masterpieces              главная таблица экспонатов
-
-museum_types                     справочник типов
-museum_countries                 справочник стран
-museum_periods                   справочник периодов
-museum_paint_schools             справочник школ
-museum_graphics_types            справочник типов графики
-
-museum_buildings                 здания
-museum_floors                    этажи
-museum_halls                     залы
-museum_expositions               экспозиции
-museum_exposition_halls          связь экспозиций и залов
-
-museum_persons                   авторы, коллекционеры, мастера
-museum_masterpiece_persons       связь экспонатов с персонами
-
-museum_masterpiece_images        изображения экспонатов
-
-museum_building_schedule_regular регулярное расписание
-museum_building_schedule_exceptions исключения расписания
-
-museum_tags                      пользовательские теги
-museum_masterpiece_tags          связь тегов и экспонатов
-museum_masterpiece_notes         пользовательские заметки
-```
-
----
-
-# 10. Что делать дальше по шагам
-
-Я бы делал так:
-
-1. Создать SQL-таблицы.
-2. Написать импорт `buildings.json`.
-3. Импортировать здания.
-4. Импортировать этажи.
-5. Импортировать залы.
-6. Импортировать экспозиции.
-7. Написать импорт `masterpieces.json`.
-8. Сначала заполнить справочники: типы, страны, периоды, школы, типы графики.
-9. Потом импортировать экспонаты.
-10. Потом импортировать авторов, коллекционеров и связи.
-11. Потом импортировать изображения.
-12. После этого делать интерфейс.
-
-Интерфейс для первого прохода:
-
-```text
-/masterpieces/index.php
-```
-
-Список экспонатов с фильтрами:
-
-```text
-тип
-страна
-период
-здание
-зал
-автор
-```
-
-```text
-/masterpieces/view.php?id=...
-```
-
-Карточка экспоната:
-
-```text
-название
-год
-инвентарный номер
-тип
-страна
-период
-материал
-описание
-галерея
-авторы
-коллекционеры
-здание
-зал
-заметки
-теги
-```
-
-```text
-/buildings/index.php
-```
-
-Список зданий.
-
-```text
-/buildings/view.php?id=...
-```
-
-Карточка здания:
-
-```text
-описание
-адрес
-расписание
-этажи
-залы
-экспозиции
-экспонаты в этом здании
-```
-
-Главное: **не хранить авторов, коллекционеров, галерею и залы JSON-строкой в одной таблице**. Для учебного проекта лучше разнести их по связям — так ты реально потренируешь `Reference`, `OneToMany`, `ManyToMany` и нормальную ORM-архитектуру.
-
-
-Да, в моём прошлом ответе я дал таблицы, но **не разложил их по типам связей**. Исправляю.
-
-## 1. Связи один к одному — `1:1`
-
-В исходных JSON **жёсткой обязательной 1:1 связи почти нет**. Большинство данных либо лежат прямо внутри объекта, либо являются `1:N` / `M:N`.
-
-Но для учебного проекта можно специально сделать 1:1, чтобы потренировать ORM-связь.
-
-### Вариант 1: экспонат → подробный контент
-
-```text
-museum_masterpieces 1:1 museum_masterpiece_details
-```
-
-То есть:
-
-```text
-museum_masterpieces
-- id
-- name_ru
-- year
-- inv_num
-- building_id
-- hall_id
-```
-
-А длинные текстовые поля вынести отдельно:
-
-```text
-museum_masterpiece_details
-- masterpiece_id
-- description_ru
-- annotation_ru
-- litra_ru
-- restor_ru
-- search_text_ru
-- search_keywords_ru
-```
-
-Почему это 1:1:
-
-```text
-один экспонат имеет одну карточку подробного описания
-одна карточка подробного описания относится только к одному экспонату
-```
-
-SQL-ключ:
-
-```sql
-masterpiece_id INT UNSIGNED PRIMARY KEY
-```
-
-То есть `masterpiece_id` одновременно и `PRIMARY KEY`, и `FOREIGN KEY`.
-
----
-
-### Вариант 2: здание → подробный контент
-
-```text
-museum_buildings 1:1 museum_building_details
-```
-
-В `buildings.json` у здания много больших HTML-полей: `text.ru`, `textmore.ru`, `adress.ru`, `timeline.ru`, `rate.ru`, `tel.ru`, `rules.ru`, `audiog.ru`. В файле также есть вложенные структуры расписания и этажей. 
-
-Можно сделать так:
-
-```text
-museum_buildings
-- id
-- source_id
-- name_ru
-- path
-- is_closed
-```
-
-```text
-museum_building_details
-- building_id
-- brief_ru
-- text_ru
-- text_more_ru
-- address_ru
-- timeline_ru
-- rate_ru
-- tel_ru
-- rules_ru
-- audioguide_ru
-```
-
-Это тоже учебная 1:1 связь.
-
----
-
-## 2. Связи один ко многим — `1:N`
-
-Это основные связи в твоей структуре.
-
----
-
-### 2.1. Здание → этажи
-
-```text
-museum_buildings 1:N museum_floors
-```
-
-```text
-одно здание имеет много этажей
-один этаж принадлежит одному зданию
-```
-
-В JSON это видно по структуре:
-
-```text
-building
- └── floors
-      └── floor_id
-```
-
-В `buildings.json` у здания есть вложенный блок `floors`, внутри которого находятся этажи и дальше залы. 
-
-Ключ:
-
-```sql
-museum_floors.building_id
-```
-
----
-
-### 2.2. Этаж → залы
-
-```text
-museum_floors 1:N museum_halls
-```
-
-```text
-один этаж имеет много залов
-один зал принадлежит одному этажу
-```
-
-Ключ:
-
-```sql
-museum_halls.floor_id
-```
-
----
-
-### 2.3. Здание → залы
-
-Это можно хранить напрямую тоже:
-
-```text
-museum_buildings 1:N museum_halls
-```
-
-```text
-одно здание имеет много залов
-один зал принадлежит одному зданию
-```
-
-Ключ:
-
-```sql
-museum_halls.building_id
-```
-
-Да, связь частично дублирует `floor_id`, но для удобных запросов это нормально в учебном проекте.
-
----
-
-### 2.4. Зал → экспонаты
-
-```text
-museum_halls 1:N museum_masterpieces
-```
-
-```text
-один зал содержит много экспонатов
-один экспонат находится в одном зале
-```
-
-В `masterpieces.json` у экспоната есть поля:
-
-```json
-"hall": "186",
-"building": "116"
-```
-
-Например, у экспоната есть `hall`, `building`, `gallery`, `authors`, `collectors`. 
-
-Ключи:
-
-```sql
-museum_masterpieces.hall_id
-museum_masterpieces.building_id
-```
-
----
-
-### 2.5. Здание → экспонаты
-
-```text
-museum_buildings 1:N museum_masterpieces
-```
-
-```text
-одно здание содержит много экспонатов
-один экспонат относится к одному зданию
-```
-
-Ключ:
-
-```sql
-museum_masterpieces.building_id
-```
-
----
-
-### 2.6. Тип → экспонаты
-
-```text
-museum_types 1:N museum_masterpieces
-```
-
-```text
-один тип, например "Живопись", может быть у многих экспонатов
-один экспонат имеет один основной тип
-```
-
-Ключ:
-
-```sql
-museum_masterpieces.type_id
-```
-
----
-
-### 2.7. Страна → экспонаты
-
-```text
-museum_countries 1:N museum_masterpieces
-```
-
-```text
-одна страна может быть у многих экспонатов
-один экспонат имеет одну основную страну
-```
-
-Ключ:
-
-```sql
-museum_masterpieces.country_id
-```
-
----
-
-### 2.8. Период → экспонаты
-
-```text
-museum_periods 1:N museum_masterpieces
-```
-
-```text
-один период, например "XIX век", может быть у многих экспонатов
-один экспонат имеет один основной период
-```
-
-Ключ:
-
-```sql
-museum_masterpieces.period_id
-```
-
----
-
-### 2.9. Экспонат → изображения
-
-```text
-museum_masterpieces 1:N museum_masterpiece_images
-```
-
-```text
-один экспонат имеет много изображений
-одно изображение принадлежит одному экспонату
-```
-
-В `masterpieces.json` поле `gallery` содержит группы изображений `id01`, `id02`, `id03`. У некоторых экспонатов несколько групп изображений. 
-
-Ключ:
-
-```sql
-museum_masterpiece_images.masterpiece_id
-```
-
----
-
-### 2.10. Здание → регулярное расписание
-
-```text
-museum_buildings 1:N museum_building_schedule_regular
-```
-
-```text
-одно здание имеет много строк расписания
-одна строка расписания относится к одному зданию
-```
-
-Например:
-
-```text
-Понедельник
-Вторник
-Среда
-Четверг
-...
-```
-
-Ключ:
-
-```sql
-museum_building_schedule_regular.building_id
-```
-
----
-
-### 2.11. Здание → исключения расписания
-
-```text
-museum_buildings 1:N museum_building_schedule_exceptions
-```
-
-```text
-одно здание имеет много исключений по датам
-одно исключение относится к одному зданию
-```
-
-В `buildings.json` у расписания есть `regulars` и `exceptions`: регулярные дни недели и отдельные даты-исключения. 
-
-Ключ:
-
-```sql
-museum_building_schedule_exceptions.building_id
-```
+CREATE TABLE `otus_museum_masterpieces` (
+  `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `SOURCE_ID` INT UNSIGNED NOT NULL,
+  `NAME_RU` VARCHAR(255) NOT NULL,
+  `INV_NUM` VARCHAR(100) NOT NULL,
+  `YEAR_VALUE` INT NOT NULL,
+  `GET_YEAR` SMALLINT UNSIGNED NULL,
+  `COUNTRY_RU` VARCHAR(100) NULL,
+  `PERIOD_NAME_RU` VARCHAR(150) NULL,
+  `BUILDING_SOURCE_ID` INT UNSIGNED NULL,
+  `HALL_SOURCE_ID` INT UNSIGNED NULL,
+  `BUILDING_ELEMENT_ID` INT UNSIGNED NULL,
+  `HALL_ELEMENT_ID` INT UNSIGNED NULL,
+  `TYPE_ELEMENT_ID` INT UNSIGNED NULL,
+  `FIRST_IMAGE_PATH` VARCHAR(500) NULL,
+  `DETAIL_PATH` VARCHAR(500) NOT NULL,
+  `SHOW_IN_HALL` TINYINT(1) NOT NULL DEFAULT 0,
+  `SHOW_IN_COLLECTION` TINYINT(1) NOT NULL DEFAULT 1,
+  `IS_CAST` TINYINT(1) NOT NULL DEFAULT 0,
+  `CREATED_AT` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `UPDATED_AT` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `ux_otus_museum_masterpieces_source_id` (`SOURCE_ID`),
+  KEY `idx_otus_mm_year` (`YEAR_VALUE`),
+  KEY `idx_otus_mm_inv_num` (`INV_NUM`),
+  KEY `idx_otus_mm_building_el` (`BUILDING_ELEMENT_ID`),
+  KEY `idx_otus_mm_hall_el` (`HALL_ELEMENT_ID`),
+  KEY `idx_otus_mm_type_el` (`TYPE_ELEMENT_ID`),
+  KEY `idx_otus_mm_building_hall` (`BUILDING_ELEMENT_ID`, `HALL_ELEMENT_ID`),
+  KEY `idx_otus_mm_flags` (`SHOW_IN_COLLECTION`, `SHOW_IN_HALL`, `IS_CAST`)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+```
+
+Если на стенде ядро Bitrix хранит `b_iblock_element` в `InnoDB` и вы хотите именно жёсткие внешние ключи, их можно добавить отдельным `ALTER TABLE`. Но для учебного проекта в Bitrix обычно достаточно **индексированных логических ссылок** и проверки существования элементов на импорте: это проще и стабильнее для коробочных инсталляций. citeturn4view0
+
+### ORM-модели Bitrix D7
+
+С точки зрения D7 ваша custom ORM-сущность должна наследоваться от `DataManager` и переопределять `getTableName()` и `getMap()`. Это базовое требование официальной документации. citeturn4view0
+
+| Путь | Namespace | Класс | Что описывает | Ключевые поля `getMap()` | Связи |
+|---|---|---|---|---|---|
+| `/local/modules/otus.museum/lib/model/masterpiece.php` | `Otus\Museum\Model` | `MasterpieceTable` | `otus_museum_masterpieces` | все поля таблицы выше | `Reference` на `BUILDING_ITEM`, `HALL_ITEM`, `TYPE_ITEM` через `Join::on()` |
+| системный класс, генерируется ядром | `Bitrix\Iblock\Elements` | `ElementMuseumBuildingsTable` | инфоблок `museum_buildings` | поля элемента + свойства инфоблока | используется как target в `Reference` |
+| системный класс, генерируется ядром | `Bitrix\Iblock\Elements` | `ElementMuseumHallsTable` | инфоблок `museum_halls` | поля элемента + свойства инфоблока | у зала есть свойство `BUILDING_REF` |
+| системный класс, генерируется ядром | `Bitrix\Iblock\Elements` | `ElementMuseumTypesTable` | инфоблок `museum_types` | поля элемента + свойства инфоблока | используется как target в `Reference` |
+
+Пример логики связей в `MasterpieceTable` такой:
+
+- `BUILDING_ITEM` → `ElementMuseumBuildingsTable::class` по `this.BUILDING_ELEMENT_ID = ref.ID`;
+- `HALL_ITEM` → `ElementMuseumHallsTable::class` по `this.HALL_ELEMENT_ID = ref.ID`;
+- `TYPE_ITEM` → `ElementMuseumTypesTable::class` по `this.TYPE_ELEMENT_ID = ref.ID`.
+
+Именно так в D7 правильно описываются направленные связи “многие-к-одному”; на обратной стороне при необходимости можно строить `OneToMany`. citeturn2view0turn9search0
+
+### Какой тип связей здесь получается
+
+| Тип связи | Где в варианте A | Комментарий |
+|---|---|---|
+| многие-к-одному | `Masterpiece -> Building`, `Masterpiece -> Hall`, `Masterpiece -> Type` | основной учебный кейс через `Reference` |
+| один-ко-многим | `Building -> Halls` | удобно задаётся свойством `BUILDING_REF` у зала |
+| один-к-одному | отсутствует | в минимуме не нужен |
+| многие-ко-многим | отсутствует | для сдачи не обязателен, появится в варианте B |
+| связующая таблица | отсутствует | в минимуме не нужна |
+
+Итог: **вариант A полностью подходит под ДЗ** и при этом не перегружен. Это мой рекомендуемый финальный выбор для сдачи.
+
+## Вариант B расширенный учебный
+
+Этот вариант хорош именно как **второй этап после сдачи**, потому что он отлично учит нормализации, `OneToMany`, связующим таблицам и расширенной загрузке данных. Но как **первый** вариант он хуже защищается: вы слишком быстро уходите от учебной задачи “одна своя таблица + два инфоблока”. fileciteturn3file11
+
+### Расширенная SQL-схема
+
+Ниже — раскладка на “обязательно для ДЗ”, “полезно для обучения” и “можно отложить”. Она согласуется с тем, какие сущности реально есть в файлах и какие из них хочется вынести в полноценные таблицы. fileciteturn3file12 fileciteturn3file13
+
+| Статус | Таблица | Назначение |
+|---|---|---|
+| обязательно для ДЗ | `otus_museum_masterpieces` | ядро проекта |
+| полезно для обучения | `otus_museum_masterpiece_details` | длинные тексты, аннотации, provenance, редкие поля |
+| полезно для обучения | `otus_museum_persons` | авторы, коллекционеры |
+| полезно для обучения | `otus_museum_masterpiece_persons` | связь экспонат ↔ персона с ролью |
+| полезно для обучения | `otus_museum_masterpiece_images` | все изображения из `gallery` |
+| полезно для обучения | `otus_museum_tags` | отдельный учебный справочник тегов |
+| полезно для обучения | `otus_museum_masterpiece_tags` | чистый ManyToMany без дополнительных полей |
+| полезно для обучения | `otus_museum_buildings` | если захотите позже уйти от инфоблоков к SQL-справочнику |
+| полезно для обучения | `otus_museum_floors` | этажи |
+| полезно для обучения | `otus_museum_halls` | залы как SQL-справочник |
+| полезно для обучения | `otus_museum_building_schedule_regular` | регулярное расписание |
+| полезно для обучения | `otus_museum_building_schedule_exceptions` | исключения расписания |
+| можно отложить | `otus_museum_types` | типы как SQL-справочник вместо инфоблока |
+| можно отложить | `otus_museum_countries` | страны |
+| можно отложить | `otus_museum_periods` | периоды |
+| можно отложить | `otus_museum_notes` | исследовательские заметки |
+
+### Какие связи здесь появляются
+
+В расширенной модели уже есть все учебные паттерны.
+
+| Тип связи | Где | Почему |
+|---|---|---|
+| один-к-одному | `masterpieces -> masterpiece_details` | длинные поля отделяются от списка |
+| один-ко-многим | `masterpieces -> masterpiece_images` | у одного экспоната много изображений |
+| один-ко-многим | `buildings -> floors -> halls` | естественная иерархия здания |
+| многие-ко-многим | `masterpieces <-> persons` через `masterpiece_persons` | один экспонат может иметь несколько авторов / коллекционеров |
+| многие-ко-многим | `masterpieces <-> tags` через `masterpiece_tags` | хороший чистый учебный пример |
 
----
+Очень важная методическая деталь: хотя Bitrix ORM умеет `ManyToMany`, **если в таблице связи есть дополнительные поля**, лучше использовать не “голый” `ManyToMany`, а отдельную сущность-посредник и `OneToMany`. Официальный курс прямо это поясняет на примере отношений со вспомогательными полями. Поэтому `masterpiece_persons` логично делать отдельной таблицей с полями `ROLE_CODE`, `SORT`, `COMMENT_RU`, а не упрощать до чистого `ManyToMany`. citeturn2view1
 
-## 3. Многие ко многим — `M:N`
+### ORM-классы для расширенного варианта
 
-Вот здесь появляются **связующие таблицы**.
+| Путь | Namespace | Класс | Таблица | Ключевые поля | Связи |
+|---|---|---|---|---|---|
+| `/local/modules/otus.museum/lib/model/masterpiecedetail.php` | `Otus\Museum\Model` | `MasterpieceDetailTable` | `otus_museum_masterpiece_details` | `MASTERPIECE_ID`, `TEXT_RU`, `ANNOTATION_RU`, `MATERIAL_RU`, `FROM_RU` | `Reference` на `MasterpieceTable` |
+| `/local/modules/otus.museum/lib/model/person.php` | `Otus\Museum\Model` | `PersonTable` | `otus_museum_persons` | `SOURCE_HASH`, `NAME_RU`, `PERSON_TYPE`, `COMMENT_RU` | `OneToMany` на `MasterpiecePersonTable` |
+| `/local/modules/otus.museum/lib/model/masterpieceperson.php` | `Otus\Museum\Model` | `MasterpiecePersonTable` | `otus_museum_masterpiece_persons` | `MASTERPIECE_ID`, `PERSON_ID`, `ROLE_CODE`, `SORT` | `Reference` на обе стороны |
+| `/local/modules/otus.museum/lib/model/masterpieceimage.php` | `Otus\Museum\Model` | `MasterpieceImageTable` | `otus_museum_masterpiece_images` | `MASTERPIECE_ID`, `GROUP_NO`, `IMAGE_NO`, `IMAGE_PATH`, `SORT` | `Reference` на `MasterpieceTable` |
+| `/local/modules/otus.museum/lib/model/tag.php` | `Otus\Museum\Model` | `TagTable` | `otus_museum_tags` | `NAME`, `CODE` | `ManyToMany` или link-table |
+| `/local/modules/otus.museum/lib/model/masterpiecetag.php` | `Otus\Museum\Model` | `MasterpieceTagTable` | `otus_museum_masterpiece_tags` | `MASTERPIECE_ID`, `TAG_ID` | link-table для pure M:N |
+| `/local/modules/otus.museum/lib/model/building.php` | `Otus\Museum\Model` | `BuildingTable` | `otus_museum_buildings` | `SOURCE_ID`, `NAME_RU`, `ADDRESS_RU`, `CLOSED_FLAG` | `OneToMany` на floors / halls / schedules |
+| `/local/modules/otus.museum/lib/model/floor.php` | `Otus\Museum\Model` | `FloorTable` | `otus_museum_floors` | `BUILDING_ID`, `SOURCE_ID`, `NUMBER`, `NAME_RU` | `Reference` + `OneToMany` |
+| `/local/modules/otus.museum/lib/model/hall.php` | `Otus\Museum\Model` | `HallTable` | `otus_museum_halls` | `BUILDING_ID`, `FLOOR_ID`, `SOURCE_ID`, `NUMBER`, `NAME_RU` | `Reference` + `OneToMany` |
 
----
+Мой вывод по варианту B простой: **как учебный полигон — отлично; как первая сдача — слишком тяжело**.
 
-## 3.1. Экспонаты ↔ персоны
+## Импорт, выборка и тестовая страница
 
-Это главная связующая таблица для авторов и коллекционеров.
+### Алгоритм импорта из JSON
 
-```text
-museum_masterpieces M:N museum_persons
-```
-
-Через:
-
-```text
-museum_masterpiece_persons
-```
-
-Почему многие ко многим:
-
-```text
-один экспонат может иметь несколько авторов
-один автор может иметь несколько экспонатов
-```
-
-И так же:
-
-```text
-один экспонат может иметь несколько коллекционеров
-один коллекционер может быть связан с несколькими экспонатами
-```
-
-В `masterpieces.json` поля `authors` и `collectors` могут быть пустыми или объектами со списком персон; у автора может быть комментарий роли, например `автор`. 
-
-Структура:
-
-```text
-museum_masterpieces
-- id
-
-museum_persons
-- id
-- name_ru
-
-museum_masterpiece_persons
-- masterpiece_id
-- person_id
-- role
-- role_comment_ru
-```
-
-Пример `role`:
-
-```text
-author
-collector
-```
-
-Это самая важная связующая таблица.
-
----
-
-## 3.2. Экспозиции ↔ залы
-
-```text
-museum_expositions M:N museum_halls
-```
-
-Через:
+Ниже — алгоритм, который я бы реально реализовывал.
 
-```text
-museum_exposition_halls
-```
-
-Почему многие ко многим:
-
-```text
-одна экспозиция может включать несколько залов
-один зал теоретически может быть связан с несколькими экспозициями
-```
-
-В `buildings.json` у зала есть поле `exposition`, а у экспозиции может быть `halls_list`. Это хороший кандидат на связующую таблицу. 
-
-Структура:
+1. Загрузить `buildings.json` и пройти все здания.
+2. Для каждого здания создать или обновить элемент инфоблока `museum_buildings` по `SOURCE_ID` и/или `XML_ID`.
+3. Если у здания есть `floors`, пройти этажи и залы.
+4. Для каждого зала создать или обновить элемент инфоблока `museum_halls`, записать туда `SOURCE_ID`, `BUILDING_REF`, `BUILDING_SOURCE_ID`, `FLOOR_SOURCE_ID`, `FLOOR_NUMBER`, `HALL_NUMBER`.
+5. Сформировать in-memory map:
+   - `building_source_id => iblock_element_id`
+   - `hall_source_id => iblock_element_id`
+6. По `masterpieces.json` собрать distinct `type.ru` и создать/обновить элементы `museum_types`.
+7. Пройти все экспонаты и сделать upsert в `otus_museum_masterpieces` по `SOURCE_ID`.
+8. На втором этапе — импортировать авторов, коллекционеров и все изображения в отдельные таблицы. Постановка задачи как раз просит описать эти шаги именно в таком порядке. fileciteturn3file10 fileciteturn3file13
 
-```text
-museum_expositions
-- id
+Крайние случаи надо обрабатывать явно:
 
-museum_halls
-- id
+| Ситуация | Что делать |
+|---|---|
+| `hall` пустой | ставить `HALL_SOURCE_ID = NULL`, `HALL_ELEMENT_ID = NULL`; это нормальная ситуация, а не ошибка |
+| `building` есть, но не найден в `buildings.json` | не падать, сохранять `BUILDING_SOURCE_ID`, а `BUILDING_ELEMENT_ID = NULL`; писать warning в лог |
+| `authors` или `collectors` — пустая строка | ничего не импортировать в связи |
+| `authors` или `collectors` — объект | итерировать элементы словаря, нормализовать имя и роль |
+| `gallery` | в минимуме брать только первый найденный путь как `FIRST_IMAGE_PATH`; в расширении — раскладывать в `masterpiece_images` |
+| `ru/en` | сохранять только `ru`; `en` игнорировать |
+| повторный импорт | искать по `SOURCE_ID` и обновлять, а не создавать заново |
 
-museum_exposition_halls
-- exposition_id
-- hall_id
-```
+Этот подход полностью соответствует реальной природе файлов: в экспонатах `hall` действительно часто пуст, `authors` и `collectors` неоднородны, а `gallery` всегда сложный словарь, а не простой массив. fileciteturn2file2 fileciteturn3file5 fileciteturn3file7
 
----
+### Что я бы делал с импортом в инфоблоки на практике
 
-## 3.3. Экспонаты ↔ теги
+Для **чтения** я бы опирался на ORM инфоблоков. Для **массовой записи** в учебном проекте я бы допускал классический API инфоблоков, потому что официальная документация по ORM-интеграции инфоблоков предупреждает о функциональных ограничениях: старые события не поддерживаются, часть служебной обвязки не выполняется автоматически, а для generic `ElementTable` методы `add/update/delete` вообще заблокированы. Поэтому идеальный компромисс здесь такой: **свои таблицы и выборки — D7 ORM; массовый импорт элементов инфоблоков — либо осторожно через generated ORM, либо через классический API**. Это не “откат назад”, а практичная инженерная развилка. citeturn8view0turn8view1
 
-Это уже наша учебная пользовательская часть.
-
-```text
-museum_masterpieces M:N museum_tags
-```
+### Тестовая страница
 
-Через:
+Рекомендованная структура:
 
-```text
-museum_masterpiece_tags
-```
+- `/local/otus/museum/index.php` — публичная тестовая страница списка;
+- `/local/modules/otus.museum/lib/model/masterpiece.php` — ORM сущность;
+- `/local/modules/otus.museum/lib/service/import/...` — импортёры;
+- `/local/modules/otus.museum/lib/repository/...` — слой выборки, если хотите аккуратнее разделить ответственность.
 
-Почему многие ко многим:
+На странице списка выводить:
 
-```text
-один экспонат может иметь много тегов
-один тег может быть у многих экспонатов
-```
+- название экспоната;
+- инвентарный номер;
+- год;
+- тип;
+- страну;
+- здание;
+- зал;
+- первое изображение;
+- автора или коллекционера — **только если вы успели включить это во второй этап**. Это совпадает с ожидаемым результатом из постановки. fileciteturn3file10
 
-Например:
-
-```text
-Египет
-портрет
-скульптура
-живопись
-XIX век
-избранное
-на изучение
-```
+### Как выполнять выборку
 
-Структура:
+Правильный базовый вариант такой:
 
-```text
-museum_masterpieces
-- id
+1. Основная выборка — из `MasterpieceTable`.
+2. Здание, зал и тип — через `Reference` к generated ORM-классам инфоблоков.
+3. В `select` брать только нужные поля, например:
+   - `NAME_RU`, `INV_NUM`, `YEAR_VALUE`, `COUNTRY_RU`, `FIRST_IMAGE_PATH`;
+   - `BUILDING_ITEM.NAME`;
+   - `HALL_ITEM.NAME`;
+   - `TYPE_ITEM.NAME`.
 
-museum_tags
-- id
-- name_ru
+Такой подход прямо следует из модели `DataManager + Reference + Join::on()`, рекомендованной в документации. citeturn4view0turn2view0
 
-museum_masterpiece_tags
-- masterpiece_id
-- tag_id
-```
+`registerRuntimeField()` здесь уместен в двух случаях:
 
----
+- для **динамического expression field**, например `DISPLAY_YEAR`;
+- для **разового ad hoc join**, если вы не хотите вносить временную связь в `getMap()`.
 
-## 4. Общая схема связей
+Для повторно используемых стабильных связей `BUILDING_ITEM`, `HALL_ITEM`, `TYPE_ITEM` лучше всё же держать `Reference` в `getMap()`, а runtime оставить для вычисляемых полей и узких отчётов. Документация описывает `registerRuntimeField()` именно как динамическое поле уровня запроса. citeturn2view2turn3search2
 
-```text
-museum_buildings
-  1:N museum_floors
-  1:N museum_halls
-  1:N museum_masterpieces
-  1:N museum_building_schedule_regular
-  1:N museum_building_schedule_exceptions
-  1:1 museum_building_details
+### Кэширование
 
-museum_floors
-  1:N museum_halls
+Для тестовой страницы разумен простой D7-кэш через `Bitrix\Main\Data\Cache`:
 
-museum_halls
-  1:N museum_masterpieces
-  M:N museum_expositions через museum_exposition_halls
+- TTL: 3600 секунд;
+- ключ кэша: сортировка, текущая страница, фильтр;
+- директория кэша: например `/otus/museum/list`.
 
-museum_masterpieces
-  1:1 museum_masterpiece_details
-  1:N museum_masterpiece_images
-  M:N museum_persons через museum_masterpiece_persons
-  M:N museum_tags через museum_masterpiece_tags
+API класса `Cache` для `initCache()`, `startDataCache()`, `getVars()`, `endDataCache()` описан официально и отлично подходит для такого списка. citeturn6view0
 
-museum_types
-  1:N museum_masterpieces
+## Оптимизация, соответствие критериям и план реализации
 
-museum_countries
-  1:N museum_masterpieces
+### Оптимизация выборки
 
-museum_periods
-  1:N museum_masterpieces
+Вот что я бы считал обязательным минимумом:
 
-museum_paint_schools
-  1:N museum_masterpieces
+| Что оптимизировать | Рекомендация |
+|---|---|
+| Индексы | `SOURCE_ID`, `YEAR_VALUE`, `BUILDING_ELEMENT_ID`, `HALL_ELEMENT_ID`, `TYPE_ELEMENT_ID`, `INV_NUM` |
+| `SELECT` | не использовать `SELECT *`; брать только поля списка |
+| Batch import | здания и залы загружать раньше экспонатов; upsert по `SOURCE_ID` |
+| Кэш | кэшировать list-query целиком на тестовой странице |
+| Связанные данные | не тянуть все свойства инфоблока “на всякий случай”; только реально выводимые |
+| IBlock ORM | если фильтруете по множественным свойствам, внимательно следить за дублями строк |
+| `registerRuntimeField` | использовать там, где связь или вычисление одноразовые; не плодить runtime ради того, что логично лежит в `getMap()` |
 
-museum_graphics_types
-  1:N museum_masterpieces
-```
+Последний пункт особенно важен: runtime полезен, но если через него строить все основные связи, код становится менее читаемым. Для стабильной архитектуры лучше статические `Reference`, для спецзадач — runtime. Это очень в духе D7 ORM и рекомендаций по работе с `getList()` и runtime-полями. citeturn2view2turn3search2turn2view3
 
----
+### Соответствие критериям ДЗ
 
-## 5. Таблицы-связки
+Ниже — как закрывается каждое требование.
 
-Вот именно **связующие таблицы**:
+| Критерий ДЗ | Как закрываем |
+|---|---|
+| создана таблица БД | `otus_museum_masterpieces` |
+| создана ORM-модель | `Otus\Museum\Model\MasterpieceTable` |
+| есть числовые поля | `YEAR_VALUE`, `GET_YEAR`, флаги |
+| есть строковые поля | `NAME_RU`, `INV_NUM`, `COUNTRY_RU`, `DETAIL_PATH` |
+| есть связываемые поля | `BUILDING_ELEMENT_ID`, `HALL_ELEMENT_ID`, `TYPE_ELEMENT_ID` |
+| есть минимум 2 инфоблока | `museum_buildings`, `museum_halls` |
+| модель БД связана с моделями инфоблоков | через `Reference` и `Join::on()` |
+| есть тестовая страница | `/local/otus/museum/index.php` |
+| из таблицы БД выбираются свойства инфоблоков | `BUILDING_ITEM.*`, `HALL_ITEM.*`, `TYPE_ITEM.*` |
+| есть `registerRuntimeField` | для `DISPLAY_YEAR` или ad hoc join/report |
+| есть кэширование | `Bitrix\Main\Data\Cache` на list-query |
+| нет ошибок при выводе | все внешние ссылки nullable, отсутствующие hall/building обрабатываются мягко |
 
-```text
-museum_masterpiece_persons
-```
+Почти все эти требования пользователь зафиксировал в постановке, а техническая сторона — ORM, `Reference`, `Join::on()`, runtime и `DataManager` — подтверждается официальной документацией. fileciteturn3file14 citeturn4view0turn2view0turn2view2turn6view0
 
-Связь:
+### Риски и спорные места
 
-```text
-экспонаты ↔ персоны
-```
+Самые опасные решения для первой версии такие:
 
-Для:
+- сразу делать SQL-таблицы для зданий, этажей, залов и расписания;
+- тащить авторов и коллекционеров в чистый `ManyToMany` без явной таблицы связи;
+- хранить `gallery` как “как-нибудь потом разберёмся”;
+- пытаться сделать весь импорт только через ORM инфоблоков без учёта ограничений API;
+- вытаскивать все поля и свойства списка через `SELECT *`.
 
-```text
-авторы
-коллекционеры
-создатели
-```
+Самые грязные поля данных:
 
----
+- `authors`, `collectors` — строка или объект;
+- `show_in_hall`, `get_year`, `paint_school`, `graphics_type` — неоднородность типов;
+- `schedule`, `floors`, `img` — объект или пустая строка;
+- `origplace`, `shop`, `link*` — редкие и нестабильные для первого релиза;
+- `year` — signed, а значит тип надо выбирать аккуратно. fileciteturn2file1 fileciteturn2file2 fileciteturn3file8
 
-```text
-museum_exposition_halls
-```
+### Финальный рекомендуемый вариант
 
-Связь:
+**Рекомендую для сдачи: вариант A.**  
+Если совсем кратко:
 
-```text
-экспозиции ↔ залы
-```
+- **своя SQL-таблица**: `otus_museum_masterpieces`;
+- **обязательные инфоблоки**: `museum_buildings`, `museum_halls`;
+- **желательный третий инфоблок**: `museum_types`;
+- **авторы, коллекционеры, галерея, расписание**: не трогать в первой версии глубоко;
+- **выборка**: `MasterpieceTable` + `Reference` на generated IBlock ORM classes;
+- **runtime**: только для вычисляемого или разового поля;
+- **кэш**: да, на список;
+- **импорт**: сначала здания и залы, потом экспонаты.
 
----
+Если преподаватель спросит “почему не больше?”, у вас будет очень сильный ответ:  
+**потому что я сначала сделал архитектуру, которая идеально закрывает критерии ДЗ, а расширенную нормализацию сознательно оставил на второй этап.**
 
-```text
-museum_masterpiece_tags
-```
+### План реализации
 
-Связь:
+```mermaid
+gantt
+    title Рекомендуемая последовательность реализации
+    dateFormat  YYYY-MM-DD
+    axisFormat  %d.%m
 
-```text
-экспонаты ↔ пользовательские теги
-```
+    section Минимальная сдаваемая версия
+    SQL таблица и MasterpieceTable      :a1, 2026-04-26, 1d
+    Инфоблоки buildings, halls, types   :a2, after a1, 1d
+    Импорт buildings и halls            :a3, after a2, 1d
+    Импорт masterpieces                 :a4, after a3, 1d
+    Тестовая страница списка            :a5, after a4, 1d
 
----
+    section Улучшение ORM-связей
+    Reference и алиасы select           :b1, after a5, 1d
+    registerRuntimeField и expression   :b2, after b1, 1d
 
-Потенциально можно добавить ещё:
+    section Интерфейс и оптимизация
+    Кэширование списка                  :c1, after b2, 1d
+    Локальная фильтрация и сортировка   :c2, after c1, 1d
 
-```text
-museum_masterpiece_shop_items
+    section Расширенная нормализация
+    Таблицы persons и images            :d1, after c2, 2d
+    Расписание и доп. справочники       :d2, after d1, 1d
 ```
 
-Для поля `shop`, если захочешь связать экспонат с товарами магазина.
+В текстовом виде это выглядит так:
 
-И:
+- **Этап 1. Минимальная сдаваемая версия.**  
+  Создать таблицу `otus_museum_masterpieces`, инфоблоки `museum_buildings`, `museum_halls`, `museum_types`, импортировать данные, вывести список.
 
-```text
-museum_hall_satellites
-```
-
-Для поля `satellites`, если выясним, что это связи между залами/объектами.
-
----
-
-## 6. Самое важное для учебного ORM
-
-Для изучения связей я бы сделал так:
-
-| Тип связи | Пример                           | Таблицы                                              |
-| --------- | -------------------------------- | ---------------------------------------------------- |
-| `1:1`     | экспонат → подробное описание    | `museum_masterpieces` → `museum_masterpiece_details` |
-| `1:N`     | здание → этажи                   | `museum_buildings` → `museum_floors`                 |
-| `1:N`     | этаж → залы                      | `museum_floors` → `museum_halls`                     |
-| `1:N`     | зал → экспонаты                  | `museum_halls` → `museum_masterpieces`               |
-| `1:N`     | экспонат → картинки              | `museum_masterpieces` → `museum_masterpiece_images`  |
-| `M:N`     | экспонаты ↔ авторы/коллекционеры | `museum_masterpiece_persons`                         |
-| `M:N`     | экспозиции ↔ залы                | `museum_exposition_halls`                            |
-| `M:N`     | экспонаты ↔ теги                 | `museum_masterpiece_tags`                            |
-
-Главная учебная модель получается такая:
-
-```text
-BuildingTable
-FloorTable
-HallTable
-MasterpieceTable
-MasterpieceDetailTable
-MasterpieceImageTable
-PersonTable
-MasterpiecePersonTable
-TagTable
-MasterpieceTagTable
-```
+- **Этап 2. Улучшение ORM-связей.**  
+  Описать `Reference` в `getMap()`, добавить красивый `select`, показать `registerRuntimeField()` для вычисляемого поля.
 
-И вот здесь ты сможешь нормально потренировать:
+- **Этап 3. Интерфейс.**  
+  Доделать страницу `/local/otus/museum/index.php`, аккуратный HTML-список, сортировку и фильтр по зданию/типу.
 
-```text
-Reference
-OneToMany
-ManyToMany
-```
+- **Этап 4. Кэширование и оптимизация.**  
+  Включить `Bitrix\Main\Data\Cache`, убрать `SELECT *`, проверить индексы.
 
-В Bitrix D7 ORM это как раз соответствует твоему учебному материалу: `Reference` для связи через внешний ключ, `OneToMany` для связи один-ко-многим, `ManyToMany` для связи многие-ко-многим через промежуточную таблицу. 
+- **Этап 5. Расширенная нормализация.**  
+  Добавить `museum_persons`, `museum_masterpiece_persons`, `museum_masterpiece_images`, а расписание и этажи выделить в SQL только после того, как минимальный вариант уже сдан и стабилен.

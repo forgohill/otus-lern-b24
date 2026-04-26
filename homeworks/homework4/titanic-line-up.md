@@ -38,7 +38,7 @@ homeworks/homework4
 │           └── titanic.passenger.detail/
 ├──index.php
 
-/local/App/Titanic/
+/local/modules/Titanic/
 │
 │
 ├── lib/

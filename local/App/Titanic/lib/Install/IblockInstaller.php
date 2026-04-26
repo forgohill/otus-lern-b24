@@ -1,0 +1,67 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Titanic\lib\Install;
+
+use App\Titanic\lib\Config\TitanicConfig;
+use App\Titanic\lib\Install\Iblocks\TitanicCabinDecksIblockInstaller;
+use App\Titanic\lib\Install\Iblocks\TitanicClassesIblockInstaller;
+use App\Titanic\lib\Install\Iblocks\TitanicPortsIblockInstaller;
+use Bitrix\Main\Loader;
+use Bitrix\Main\SystemException;
+
+/**
+ * Обработчик установки инфоблоков-справочников проекта Titanic.
+ */
+class IblockInstaller
+{
+  /**
+   * @return array{
+   *   success: bool,
+   *   iblocks: array<string, array<string, mixed>>,
+   *   errors: list<string>
+   * }
+   */
+  public function install(): array
+  {
+    $this->loadIblockModule();
+
+    $errors = [];
+    $iblocks = [];
+
+    foreach ($this->getDictionaryInstallers() as $installer) {
+      $result = $installer->install();
+      $iblocks[$installer->getCode()] = $result;
+
+      if (!$result['success']) {
+        $errors = array_merge($errors, $result['errors']);
+      }
+    }
+
+    return [
+      'success' => $errors === [],
+      'iblocks' => $iblocks,
+      'errors' => $errors,
+    ];
+  }
+
+  /**
+   * @return list<Iblocks\AbstractDictionaryIblockInstaller>
+   */
+  private function getDictionaryInstallers(): array
+  {
+    return [
+      new TitanicClassesIblockInstaller(),
+      new TitanicPortsIblockInstaller(),
+      new TitanicCabinDecksIblockInstaller(),
+    ];
+  }
+
+  private function loadIblockModule(): void
+  {
+    if (!Loader::includeModule('iblock')) {
+      throw new SystemException('Модуль iblock не подключён.');
+    }
+  }
+}

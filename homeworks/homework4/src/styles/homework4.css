@@ -1,0 +1,119 @@
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Open Sans", Arial, sans-serif;
+  color: #1f2d3d;
+}
+
+.homework-page {
+  max-width: 95%;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.homework-hero {
+  background: #ffffff;
+  border: 1px solid #e5e8ec;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.homework-title {
+  margin: 0 0 12px;
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.homework-subtitle {
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 22px;
+  color: #5d6470;
+}
+
+.homework-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.homework-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 600;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.homework-btn:hover {
+  text-decoration: none;
+}
+
+.homework-btn--primary {
+  color: #ffffff;
+  background: #2f7cf6;
+}
+
+.homework-btn--primary:hover {
+  color: #ffffff;
+  background: #2568cf;
+}
+
+.homework-btn--secondary {
+  color: #1f2d3d;
+  background: #ffffff;
+  border-color: #d9dee5;
+}
+
+.homework-btn--secondary:hover {
+  color: #1f2d3d;
+  background: #f9fafb;
+  border-color: #cfd6df;
+}
+
+.homework-section {
+  margin-top: 24px;
+  background: #ffffff;
+  border: 1px solid #e5e8ec;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.homework-section-body {
+  padding: 24px;
+}
+
+.homework-note {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px dashed #dfe5ec;
+  color: #5d6470;
+}
+
+@media (max-width: 768px) {
+  .homework-page {
+    padding: 16px 12px 36px;
+  }
+
+  .homework-hero {
+    padding: 20px;
+  }
+
+  .homework-title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+}

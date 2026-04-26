@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS `otus_titanic_tickets` (
+    `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    `TICKET_RAW` VARCHAR(100) NOT NULL COMMENT 'Билет как в CSV',
+    `TICKET_PREFIX` VARCHAR(50) NULL COMMENT 'Префикс билета: PC, CA, A, NUMERIC и т.д.',
+    `TICKET_NUMBER` VARCHAR(50) NULL COMMENT 'Номер билета без префикса',
+
+    `PASSENGER_COUNT` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Сколько пассажиров с этим билетом',
+    `FARE_TOTAL` DECIMAL(10,2) NULL COMMENT 'Общая стоимость по билету',
+
+    PRIMARY KEY (`ID`),
+
+    UNIQUE KEY `UX_TICKET_RAW` (`TICKET_RAW`),
+
+    KEY `IX_TICKET_PREFIX` (`TICKET_PREFIX`),
+    KEY `IX_TICKET_NUMBER` (`TICKET_NUMBER`)
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS `otus_titanic_cabins` (
+    `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+    `CABIN_CODE` VARCHAR(50) NOT NULL COMMENT 'Код каюты из CSV: C85, B57, C23',
+    `DECK_CODE` VARCHAR(10) NOT NULL COMMENT 'Код палубы: A, B, C, D и т.д.',
+    `DECK_ELEMENT_ID` INT UNSIGNED NOT NULL COMMENT 'Связь с элементом инфоблока палуб',
+
+    PRIMARY KEY (`ID`),
+
+    UNIQUE KEY `UX_CABIN_CODE` (`CABIN_CODE`),
+
+    KEY `IX_DECK_CODE` (`DECK_CODE`),
+    KEY `IX_DECK_ELEMENT_ID` (`DECK_ELEMENT_ID`)
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

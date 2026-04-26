@@ -19,6 +19,7 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
         ),
         'M' =>
         array (
+            'Models\\Titanic\\' => 15,
             'Models\\HospitalClients\\' => 23,
             'Models\\BooksForLessons\\' => 23,
         ),
@@ -40,6 +41,10 @@ class ComposerStaticInit7ab9abf7a6b9e54114f476bf0dd2a72a
         'Symfony\\Component\\VarDumper\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/var-dumper',
+        ),
+        'Models\\Titanic\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/modules/Titanic/lib',
         ),
         'Models\\HospitalClients\\' =>
         array (

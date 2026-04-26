@@ -1,6 +1,6 @@
 <?
 
-use App\Titanic\lib\Install\IblockInstaller;
+use Models\Titanic\Install\IblockInstaller;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;

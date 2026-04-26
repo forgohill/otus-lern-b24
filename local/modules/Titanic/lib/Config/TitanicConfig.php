@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Titanic\lib\Config;
+namespace Models\Titanic\Config;
 
 /**
  * Общие коды учебного проекта Titanic.

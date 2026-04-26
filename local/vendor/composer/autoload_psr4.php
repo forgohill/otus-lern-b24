@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'Symfony\\Polyfill\\Mbstring\\' => array($vendorDir . '/symfony/polyfill-mbstring'),
     'Symfony\\Component\\VarDumper\\' => array($vendorDir . '/symfony/var-dumper'),
+    'Models\\Titanic\\' => array($baseDir . '/modules/Titanic/lib'),
     'Models\\HospitalClients\\' => array($baseDir . '/modules/HospitalClients/lib'),
     'Models\\BooksForLessons\\' => array($baseDir . '/modules/BooksForLessons/lib'),
     'Local\\' => array($baseDir . '/php_interface/lib'),

@@ -1,6 +1,6 @@
 <?php
 
-namespace Bitrix\Titanic;
+namespace Models\Titanic\Orm;
 
 use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
@@ -8,6 +8,8 @@ use Bitrix\Main\ORM\Fields\FloatField;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Class TicketsTable

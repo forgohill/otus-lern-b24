@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Titanic\lib\Install;
+namespace Models\Titanic\Install;
 
-use App\Titanic\lib\Config\TitanicConfig;
-use App\Titanic\lib\Install\Iblocks\TitanicCabinDecksIblockInstaller;
-use App\Titanic\lib\Install\Iblocks\TitanicClassesIblockInstaller;
-use App\Titanic\lib\Install\Iblocks\TitanicPortsIblockInstaller;
+use Models\Titanic\Config\TitanicConfig;
+use Models\Titanic\Install\Iblocks\TitanicCabinDecksIblockInstaller;
+use Models\Titanic\Install\Iblocks\TitanicClassesIblockInstaller;
+use Models\Titanic\Install\Iblocks\TitanicPortsIblockInstaller;
 use Bitrix\Main\Loader;
 use Bitrix\Main\SystemException;
 

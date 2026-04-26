@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Titanic\lib\Install\Iblocks;
+namespace Models\Titanic\Install\Iblocks;
 
-use App\Titanic\lib\Config\TitanicConfig;
+use Models\Titanic\Config\TitanicConfig;
 
 class TitanicClassesIblockInstaller extends AbstractDictionaryIblockInstaller
 {

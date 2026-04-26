@@ -3,12 +3,13 @@
  "require": {
   "symfony/var-dumper": "^8.0"
  },
- "autoload": {
-  "psr-4": {
-   "Local\\": "php_interface/lib/",
-   "App\\": "App/",
-   "Models\\HospitalClients\\": "modules/HospitalClients/lib/",
-   "Models\\BooksForLessons\\": "modules/BooksForLessons/lib/"
+  "autoload": {
+   "psr-4": {
+    "Local\\": "php_interface/lib/",
+    "App\\": "App/",
+    "Models\\Titanic\\": "modules/Titanic/lib/",
+    "Models\\HospitalClients\\": "modules/HospitalClients/lib/",
+    "Models\\BooksForLessons\\": "modules/BooksForLessons/lib/"
+   }
   }
- }
 }

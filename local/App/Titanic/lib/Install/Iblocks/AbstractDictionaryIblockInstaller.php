@@ -75,6 +75,31 @@ abstract class AbstractDictionaryIblockInstaller
    */
   abstract protected function getElements(): array;
 
+  public function getTitle(): string
+  {
+    return $this->getName();
+  }
+
+  public function isInstalled(): bool
+  {
+    $iblockId = $this->findIblockId();
+
+    if ($iblockId === null) {
+      return false;
+    }
+
+    return $this->validateIblock($iblockId) === [];
+  }
+
+  public function getInstallStatus(): string
+  {
+    if (!$this->isInstalled()) {
+      return 'Не установлен';
+    }
+
+    return 'Установлен';
+  }
+
   private function findIblockId(): ?int
   {
     $iblock = IblockTable::getRow([

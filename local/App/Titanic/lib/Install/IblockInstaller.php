@@ -49,7 +49,7 @@ class IblockInstaller
   /**
    * @return list<Iblocks\AbstractDictionaryIblockInstaller>
    */
-  private function getDictionaryInstallers(): array
+  public function getDictionaryInstallers(): array
   {
     return [
       new TitanicClassesIblockInstaller(),

@@ -84,3 +84,5 @@ AGENTS.md
 /vote-result/
 /workgroups/
 /.htaccess.save
+buildings.json:Zone.Identifier
+masterpieces.json:Zone.Identifier

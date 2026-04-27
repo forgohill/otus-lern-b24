@@ -3,24 +3,21 @@
 use Models\Titanic\Install\IblockInstaller;
 use Models\Titanic\Install\TableInstaller;
 use Models\Titanic\Orm\CabinsTable;
+use Models\Titanic\Orm\PassengerCabinTable;
 use Models\Titanic\Orm\PassengersTable;
 use Models\Titanic\Orm\TicketsTable;
 use Models\Titanic\Service\TitanicCabinsImporter;
 use Models\Titanic\Service\TitanicPassengersImporter;
 use Models\Titanic\Service\TitanicTicketsImporter;
-use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
-use Bitrix\Main\UI\Extension;
 
 require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php");
 
 $APPLICATION->SetTitle("Проект Titanic");
 
-Loader::includeModule('ui');
-Extension::load([
-  'ui.fonts.opensans',
-]);
-
+Asset::getInstance()->addString('<link rel="preconnect" href="https://fonts.googleapis.com">');
+Asset::getInstance()->addString('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>');
+Asset::getInstance()->addString('<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap" rel="stylesheet">');
 Asset::getInstance()->addCss('/homeworks/homework4/src/styles/homework4.css');
 
 $installer = new IblockInstaller();
@@ -42,6 +39,7 @@ unset($_SESSION['homework4_passengers_import_result']);
 
 $dictionaryInstallers = $installer->getDictionaryInstallers();
 $tableStates = $tableInstaller->getTableStates();
+$tableFillStates = [];
 
 $allIblocksInstalled = true;
 
@@ -57,21 +55,49 @@ $ticketsFilled = false;
 $cabinsFilled = false;
 $passengersFilled = false;
 
+$fillTableTitles = [
+  TicketsTable::class => 'Билеты Titanic',
+  CabinsTable::class => 'Каюты Titanic',
+  PassengersTable::class => 'Пассажиры Titanic',
+  PassengerCabinTable::class => 'Связи пассажир-каюта',
+];
+
+foreach ($tableInstaller->getTableClasses() as $tableClass) {
+  $installed = !empty($tableStates[$tableClass]['installed']);
+  $count = 0;
+  $errors = [];
+
+  if ($installed) {
+    try {
+      $count = (int)$tableClass::getCount();
+    } catch (\Throwable $exception) {
+      $errors[] = $exception->getMessage();
+    }
+  }
+
+  $tableFillStates[$tableClass] = [
+    'title' => $fillTableTitles[$tableClass] ?? basename(str_replace('\\', '/', $tableClass)),
+    'table' => $tableStates[$tableClass]['table'] ?? $tableClass::getTableName(),
+    'installed' => $installed,
+    'checked' => $errors === [],
+    'filled' => $errors === [] && $count > 0,
+    'count' => $count,
+    'errors' => $errors,
+  ];
+}
+
 if ($tablesInstalled) {
-  $ticketsFilled = (bool)TicketsTable::getList([
-    'select' => ['ID'],
-    'limit' => 1,
-  ])->fetch();
+  $ticketsFilled = $tableFillStates[TicketsTable::class]['filled'];
+  $cabinsFilled = $tableFillStates[CabinsTable::class]['filled'];
+  $passengersFilled = $tableFillStates[PassengersTable::class]['filled'];
+}
 
-  $cabinsFilled = (bool)CabinsTable::getList([
-    'select' => ['ID'],
-    'limit' => 1,
-  ])->fetch();
-
-  $passengersFilled = (bool)PassengersTable::getList([
-    'select' => ['ID'],
-    'limit' => 1,
-  ])->fetch();
+$allTablesFilled = $tableFillStates !== [];
+foreach ($tableFillStates as $tableFillState) {
+  if (!$tableFillState['filled']) {
+    $allTablesFilled = false;
+    break;
+  }
 }
 
 $tablesCanBeInstalled = $allIblocksInstalled;
@@ -145,6 +171,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
           Установить инфоблоки
         </button>
       </form>
+
+      <a
+        class="homework-btn homework-btn--success<?= !$allTablesFilled ? ' homework-btn--disabled' : '' ?>"
+        href="<?= $allTablesFilled ? '/homeworks/homework4/index.php' : 'javascript:void(0)' ?>"
+        <?= !$allTablesFilled ? 'aria-disabled="true"' : '' ?>>
+        Все данные установлены, вернитесь на страницу с приложением Titanic
+      </a>
     </div>
   </div>
 
@@ -249,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
             type="submit"
             name="uninstall_titanic_tables"
             value="Y"
-            class="homework-btn homework-btn--secondary<?= $tableInstaller->isEmpty() ? ' homework-btn--disabled' : '' ?>"
+            class="homework-btn homework-btn--secondary homework-btn--danger-hover<?= $tableInstaller->isEmpty() ? ' homework-btn--disabled' : '' ?>"
             <?= $tableInstaller->isEmpty() ? 'disabled' : '' ?>>
             Удалить таблицы
           </button>
@@ -296,39 +329,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
 
   <div class="homework-section">
     <div class="homework-section-body">
-      <div class="homework-status-list">
-        <div class="homework-note homework-note--spaced">
-          Это список установленных инфоблоков Titanic.
-        </div>
-        <?php foreach ($dictionaryInstallers as $dictionaryInstaller): ?>
-          <div class="homework-status-row">
-            <div>
-              <p class="homework-status-title"><?= htmlspecialcharsbx($dictionaryInstaller->getTitle()) ?></p>
-              <p class="homework-status-text">
-                Код: <?= htmlspecialcharsbx($dictionaryInstaller->getCode()) ?>
-              </p>
-            </div>
-            <span class="homework-status-badge <?= $dictionaryInstaller->isInstalled() ? 'homework-status-badge--ok' : 'homework-status-badge--warn' ?>">
-              <?= htmlspecialcharsbx($dictionaryInstaller->getInstallStatus()) ?>
-            </span>
+      <div class="homework-status-grid">
+        <div class="homework-status-list">
+          <div class="homework-note homework-note--spaced">
+            Это список установленных инфоблоков Titanic.
           </div>
-        <?php endforeach; ?>
+          <?php foreach ($dictionaryInstallers as $dictionaryInstaller): ?>
+            <div class="homework-status-row">
+              <div>
+                <p class="homework-status-title"><?= htmlspecialcharsbx($dictionaryInstaller->getTitle()) ?></p>
+                <p class="homework-status-text">
+                  Код: <?= htmlspecialcharsbx($dictionaryInstaller->getCode()) ?>
+                </p>
+              </div>
+              <span class="homework-status-badge <?= $dictionaryInstaller->isInstalled() ? 'homework-status-badge--ok' : 'homework-status-badge--warn' ?>">
+                <?= htmlspecialcharsbx($dictionaryInstaller->getInstallStatus()) ?>
+              </span>
+            </div>
+          <?php endforeach; ?>
+        </div>
+
+        <div class="homework-status-list">
+          <div class="homework-note homework-note--spaced">
+            Это список кастомных таблиц Titanic.
+          </div>
+          <?php foreach ($tableStates as $tableClass => $tableState): ?>
+            <div class="homework-status-row">
+              <div>
+                <p class="homework-status-title"><?= htmlspecialcharsbx(basename(str_replace('\\', '/', $tableClass))) ?></p>
+                <p class="homework-status-text">
+                  Таблица: <?= htmlspecialcharsbx($tableState['table']) ?>
+                </p>
+              </div>
+              <span class="homework-status-badge <?= $tableState['installed'] ? 'homework-status-badge--ok' : 'homework-status-badge--warn' ?>">
+                <?= $tableState['installed'] ? 'Установлена' : 'Не установлена' ?>
+              </span>
+            </div>
+          <?php endforeach; ?>
+        </div>
       </div>
 
-      <div class="homework-status-list" style="margin-top: 18px;">
+      <div class="homework-status-list homework-status-list--wide" style="margin-top: 18px;">
         <div class="homework-note homework-note--spaced">
-          Это список кастомных таблиц Titanic.
+          Это список заполнения кастомных таблиц Titanic.
         </div>
-        <?php foreach ($tableStates as $tableClass => $tableState): ?>
+        <?php foreach ($tableFillStates as $tableFillState): ?>
           <div class="homework-status-row">
             <div>
-              <p class="homework-status-title"><?= htmlspecialcharsbx(basename(str_replace('\\', '/', $tableClass))) ?></p>
+              <p class="homework-status-title"><?= htmlspecialcharsbx($tableFillState['title']) ?></p>
               <p class="homework-status-text">
-                Таблица: <?= htmlspecialcharsbx($tableState['table']) ?>
+                Таблица: <?= htmlspecialcharsbx($tableFillState['table']) ?>,
+                записей: <?= (int)$tableFillState['count'] ?>
               </p>
+              <?php if (!empty($tableFillState['errors'])): ?>
+                <?php foreach ($tableFillState['errors'] as $error): ?>
+                  <p class="homework-status-text">
+                    Ошибка проверки: <?= htmlspecialcharsbx((string)$error) ?>
+                  </p>
+                <?php endforeach; ?>
+              <?php endif; ?>
             </div>
-            <span class="homework-status-badge <?= $tableState['installed'] ? 'homework-status-badge--ok' : 'homework-status-badge--warn' ?>">
-              <?= $tableState['installed'] ? 'Установлена' : 'Не установлена' ?>
+            <span class="homework-status-badge <?= $tableFillState['filled'] ? 'homework-status-badge--ok' : 'homework-status-badge--warn' ?>">
+              <?php if (!$tableFillState['installed']): ?>
+                Нет таблицы
+              <?php elseif (!$tableFillState['checked']): ?>
+                Ошибка проверки
+              <?php elseif ($tableFillState['filled']): ?>
+                Заполнена
+              <?php else: ?>
+                Пустая
+              <?php endif; ?>
             </span>
           </div>
         <?php endforeach; ?>

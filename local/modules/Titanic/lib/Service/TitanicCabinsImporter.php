@@ -16,9 +16,12 @@ final class TitanicCabinsImporter
 {
     private TitanicCsvParser $parser;
 
-    public function __construct(?TitanicCsvParser $parser = null)
+    private TitanicCabinParser $cabinParser;
+
+    public function __construct(?TitanicCsvParser $parser = null, ?TitanicCabinParser $cabinParser = null)
     {
         $this->parser = $parser ?? new TitanicCsvParser();
+        $this->cabinParser = $cabinParser ?? new TitanicCabinParser();
     }
 
     /**
@@ -135,62 +138,12 @@ final class TitanicCabinsImporter
         $cabins = [];
 
         foreach ($rows as $row) {
-            foreach ($this->splitCabins((string)($row['cabin'] ?? '')) as $cabinToken) {
-                $cabinCode = $this->normalizeCabinCode($cabinToken);
-                if ($cabinCode === '') {
-                    continue;
-                }
-
-                $deckCode = $this->detectDeckCode($cabinCode);
-                $cabins[$cabinCode] = [
-                    'CABIN_CODE' => $cabinCode,
-                    'DECK_CODE' => $deckCode,
-                ];
+            foreach ($this->cabinParser->parse((string)($row['cabin'] ?? '')) as $cabin) {
+                $cabins[$cabin['CABIN_CODE']] = $cabin;
             }
         }
 
         return array_values($cabins);
-    }
-
-    /**
-     * Разбивает строку с каютами по пробелам.
-     *
-     * @return list<string>
-     */
-    private function splitCabins(string $cabinRaw): array
-    {
-        $cabinRaw = trim($cabinRaw);
-
-        if ($cabinRaw === '') {
-            return [];
-        }
-
-        $tokens = preg_split('/\s+/u', $cabinRaw);
-
-        if ($tokens === false) {
-            return [];
-        }
-
-        return array_values(array_filter($tokens, static fn ($token): bool => trim((string)$token) !== ''));
-    }
-
-    private function normalizeCabinCode(string $cabinCode): string
-    {
-        $cabinCode = strtoupper(trim($cabinCode));
-        $cabinCode = preg_replace('/[^A-Z0-9]+/i', '', $cabinCode) ?? '';
-
-        return $cabinCode;
-    }
-
-    private function detectDeckCode(string $cabinCode): string
-    {
-        $firstChar = strtoupper(substr($cabinCode, 0, 1));
-
-        if (in_array($firstChar, ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'T'], true)) {
-            return $firstChar;
-        }
-
-        return 'unknown';
     }
 
     /**

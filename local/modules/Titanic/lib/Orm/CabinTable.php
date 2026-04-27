@@ -7,6 +7,15 @@ use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
+// use Bitrix\Sign\Blank\Block\Reference; 
+
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
+use Bitrix\Main\ORM\Query\Join;
+
+use Models\Titanic\Orm\PassengersTable as Passengers;
+
+use Models\Titanic\Service\Iblock\TitanicCabinDecksIblock  as TitanicCabinDecks;
 
 Loc::loadMessages(__FILE__);
 
@@ -69,6 +78,15 @@ class CabinsTable extends DataManager
         []
       ))->configureTitle(Loc::getMessage('CABINS_ENTITY_DECK_ELEMENT_ID_FIELD'))
         ->configureRequired(true),
+
+      (new Reference('DECK_ELEMENT', TitanicCabinDecks::getEntityDataClass(), Join::on('this.DECK_ELEMENT_ID', 'ref.ID')))->configureJoinType('left'),
+
+      (new ManyToMany('PASSENGERS', Passengers::class))
+        ->configureTableName('otus_titanic_passenger_cabin')
+        ->configureLocalPrimary('ID', 'CABIN_ID')
+        ->configureLocalReference('CABIN')
+        ->configureRemotePrimary('ID', 'PASSENGER_ID')
+        ->configureRemoteReference('PASSENGER'),
     ];
   }
 

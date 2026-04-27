@@ -9,6 +9,17 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
 
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Fields\Relations\ManyToMany;
+use Bitrix\Main\ORM\Query\Join;
+
+use Models\Titanic\Orm\TicketsTable as Ticket;
+use Models\Titanic\Orm\CabinsTable as Cabins;
+
+use Models\Titanic\Service\Iblock\TitanicClassesIblock as TitanicClasses;
+use Models\Titanic\Service\Iblock\TitanicPortsIblock as TitanicPorts;
+use Models\Titanic\Service\Iblock\TitanicCabinDecksIblock  as TitanicCabinDecks;
+
 Loc::loadMessages(__FILE__);
 
 /**
@@ -129,6 +140,22 @@ class PassengersTable extends DataManager
 					'validation' => [__CLASS__, 'validateCabinRaw']
 				]
 			))->configureTitle(Loc::getMessage('PASSENGERS_ENTITY_CABIN_RAW_FIELD')),
+
+			(new Reference('TICKET', Ticket::class, Join::on('this.TICKET_ID', 'ref.ID')))
+				->configureJoinType('left'),
+
+			(new Reference('PCLASS_ELEMENT', TitanicClasses::getEntityDataClass(), Join::on('this.PCLASS_ELEMENT_ID', 'ref.ID')))->configureJoinType('left'),
+
+			(new Reference('EMBARKED_ELEMENT', TitanicPorts::getEntityDataClass(), Join::on('this.EMBARKED_ELEMENT_ID', 'ref.ID')))->configureJoinType('left'),
+
+			(new Reference('CABIN_DECK_ELEMENT', TitanicCabinDecks::getEntityDataClass(), Join::on('this.CABIN_DECK_ELEMENT_ID', 'ref.ID')))->configureJoinType('left'),
+
+			(new ManyToMany('CABINS', Cabins::class))
+				->configureTableName('otus_titanic_passenger_cabin')
+				->configureLocalPrimary('ID', 'PASSENGER_ID')
+				->configureLocalReference('PASSENGER')
+				->configureRemotePrimary('ID', 'CABIN_ID')
+				->configureRemoteReference('CABIN'),
 		];
 	}
 

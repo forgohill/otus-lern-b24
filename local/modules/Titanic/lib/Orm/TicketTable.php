@@ -9,6 +9,12 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 use Bitrix\Main\ORM\Fields\StringField;
 use Bitrix\Main\ORM\Fields\Validators\LengthValidator;
 
+use Bitrix\Main\ORM\Fields\Relations\Reference;
+use Bitrix\Main\ORM\Fields\Relations\OneToMany;
+use Bitrix\Main\ORM\Query\Join;
+
+use Models\Titanic\Orm\PassengersTable as Passengers;
+
 Loc::loadMessages(__FILE__);
 
 /**
@@ -81,6 +87,8 @@ class TicketsTable extends DataManager
     'FARE_TOTAL',
     []
    ))->configureTitle(Loc::getMessage('TICKETS_ENTITY_FARE_TOTAL_FIELD')),
+
+   (new OneToMany('PASSENGERS', Passengers::class, 'TICKET')),
   ];
  }
 

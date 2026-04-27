@@ -2,7 +2,9 @@
 
 use Models\Titanic\Install\IblockInstaller;
 use Models\Titanic\Install\TableInstaller;
+use Models\Titanic\Orm\CabinsTable;
 use Models\Titanic\Orm\TicketsTable;
+use Models\Titanic\Service\TitanicCabinsImporter;
 use Models\Titanic\Service\TitanicTicketsImporter;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
@@ -21,14 +23,17 @@ Asset::getInstance()->addCss('/homeworks/homework4/src/styles/homework4.css');
 
 $installer = new IblockInstaller();
 $tableInstaller = new TableInstaller();
+$cabinsImporter = new TitanicCabinsImporter();
 $ticketsImporter = new TitanicTicketsImporter();
 
 $installResult = null;
 $tableInstallResult = null;
 $tableUninstallResult = null;
 $ticketsImportResult = $_SESSION['homework4_tickets_import_result'] ?? null;
+$cabinsImportResult = $_SESSION['homework4_cabins_import_result'] ?? null;
 
 unset($_SESSION['homework4_tickets_import_result']);
+unset($_SESSION['homework4_cabins_import_result']);
 
 $dictionaryInstallers = $installer->getDictionaryInstallers();
 $tableStates = $tableInstaller->getTableStates();
@@ -44,9 +49,15 @@ foreach ($dictionaryInstallers as $dictionaryInstaller) {
 
 $tablesInstalled = $tableInstaller->isInstalled();
 $ticketsFilled = false;
+$cabinsFilled = false;
 
 if ($tablesInstalled) {
   $ticketsFilled = (bool)TicketsTable::getList([
+    'select' => ['ID'],
+    'limit' => 1,
+  ])->fetch();
+
+  $cabinsFilled = (bool)CabinsTable::getList([
     'select' => ['ID'],
     'limit' => 1,
   ])->fetch();
@@ -54,6 +65,7 @@ if ($tablesInstalled) {
 
 $tablesCanBeInstalled = $allIblocksInstalled;
 $ticketsCanBeImported = $allIblocksInstalled && $tablesInstalled && !$ticketsFilled;
+$cabinsCanBeImported = $allIblocksInstalled && $tablesInstalled && $ticketsFilled && !$cabinsFilled;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['install_titanic_iblocks'])) {
   $installResult = $installer->install();
@@ -75,6 +87,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['fill_titanic_tickets'])) {
   $ticketsImportResult = $ticketsImporter->import($_SERVER['DOCUMENT_ROOT'] . '/homeworks/homework4/titanic.csv');
   $_SESSION['homework4_tickets_import_result'] = $ticketsImportResult;
+  LocalRedirect($APPLICATION->GetCurPage(false));
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['fill_titanic_cabins'])) {
+  $cabinsImportResult = $cabinsImporter->import($_SERVER['DOCUMENT_ROOT'] . '/homeworks/homework4/titanic.csv');
+  $_SESSION['homework4_cabins_import_result'] = $cabinsImportResult;
   LocalRedirect($APPLICATION->GetCurPage(false));
 }
 ?>
@@ -130,6 +148,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
             Сначала установите пользовательские таблицы.
           <?php elseif ($ticketsFilled): ?>
             Билеты уже заполнены.
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!$cabinsCanBeImported): ?>
+        <div class="homework-note">
+          <?php if (!$allIblocksInstalled): ?>
+            Сначала установите нужные инфоблоки, таблицы и заполните билеты.
+          <?php elseif (!$tablesInstalled): ?>
+            Сначала установите пользовательские таблицы и заполните билеты.
+          <?php elseif (!$ticketsFilled): ?>
+            Сначала заполните билеты.
+          <?php elseif ($cabinsFilled): ?>
+            Каюты уже заполнены.
           <?php endif; ?>
         </div>
       <?php endif; ?>
@@ -198,6 +230,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
             class="homework-btn homework-btn--primary<?= !$ticketsCanBeImported ? ' homework-btn--disabled' : '' ?>"
             <?= !$ticketsCanBeImported ? 'disabled' : '' ?>>
             Заполнить билеты
+          </button>
+        </form>
+
+        <form method="post" class="homework-toolbar-form">
+          <?= bitrix_sessid_post() ?>
+          <button
+            type="submit"
+            name="fill_titanic_cabins"
+            value="Y"
+            class="homework-btn homework-btn--primary<?= !$cabinsCanBeImported ? ' homework-btn--disabled' : '' ?>"
+            <?= !$cabinsCanBeImported ? 'disabled' : '' ?>>
+            Заполнить каюты
           </button>
         </form>
       </div>
@@ -271,6 +315,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
       <?php if (is_array($ticketsImportResult) && !empty($ticketsImportResult['errors'])): ?>
         <div class="homework-note homework-note--spaced">
           <?php foreach ($ticketsImportResult['errors'] as $error): ?>
+            <div><?= htmlspecialcharsbx((string)$error) ?></div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (is_array($cabinsImportResult)): ?>
+        <div class="homework-note homework-note--spaced">
+          <?php if (!empty($cabinsImportResult['success'])): ?>
+            Каюты заполнены.
+          <?php else: ?>
+            Заполнение кают завершилось с ошибками.
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (is_array($cabinsImportResult) && !empty($cabinsImportResult['errors'])): ?>
+        <div class="homework-note homework-note--spaced">
+          <?php foreach ($cabinsImportResult['errors'] as $error): ?>
             <div><?= htmlspecialcharsbx((string)$error) ?></div>
           <?php endforeach; ?>
         </div>

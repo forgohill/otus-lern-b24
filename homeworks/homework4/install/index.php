@@ -2,6 +2,8 @@
 
 use Models\Titanic\Install\IblockInstaller;
 use Models\Titanic\Install\TableInstaller;
+use Models\Titanic\Orm\TicketsTable;
+use Models\Titanic\Service\TitanicTicketsImporter;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;
@@ -19,10 +21,14 @@ Asset::getInstance()->addCss('/homeworks/homework4/src/styles/homework4.css');
 
 $installer = new IblockInstaller();
 $tableInstaller = new TableInstaller();
+$ticketsImporter = new TitanicTicketsImporter();
 
 $installResult = null;
 $tableInstallResult = null;
 $tableUninstallResult = null;
+$ticketsImportResult = $_SESSION['homework4_tickets_import_result'] ?? null;
+
+unset($_SESSION['homework4_tickets_import_result']);
 
 $dictionaryInstallers = $installer->getDictionaryInstallers();
 $tableStates = $tableInstaller->getTableStates();
@@ -36,7 +42,18 @@ foreach ($dictionaryInstallers as $dictionaryInstaller) {
   }
 }
 
+$tablesInstalled = $tableInstaller->isInstalled();
+$ticketsFilled = false;
+
+if ($tablesInstalled) {
+  $ticketsFilled = (bool)TicketsTable::getList([
+    'select' => ['ID'],
+    'limit' => 1,
+  ])->fetch();
+}
+
 $tablesCanBeInstalled = $allIblocksInstalled;
+$ticketsCanBeImported = $allIblocksInstalled && $tablesInstalled && !$ticketsFilled;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['install_titanic_iblocks'])) {
   $installResult = $installer->install();
@@ -52,6 +69,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['uninstall_titanic_tables'])) {
   $tableUninstallResult = $tableInstaller->uninstall();
   $tableStates = $tableInstaller->getTableStates();
+  LocalRedirect($APPLICATION->GetCurPage(false));
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['fill_titanic_tickets'])) {
+  $ticketsImportResult = $ticketsImporter->import($_SERVER['DOCUMENT_ROOT'] . '/homeworks/homework4/titanic.csv');
+  $_SESSION['homework4_tickets_import_result'] = $ticketsImportResult;
   LocalRedirect($APPLICATION->GetCurPage(false));
 }
 ?>
@@ -99,6 +122,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
         </div>
       <?php endif; ?>
 
+      <?php if (!$ticketsCanBeImported): ?>
+        <div class="homework-note">
+          <?php if (!$allIblocksInstalled): ?>
+            Сначала установите нужные инфоблоки и таблицы.
+          <?php elseif (!$tablesInstalled): ?>
+            Сначала установите пользовательские таблицы.
+          <?php elseif ($ticketsFilled): ?>
+            Билеты уже заполнены.
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (is_array($ticketsImportResult)): ?>
+        <div class="homework-note">
+          <?php if (!empty($ticketsImportResult['success'])): ?>
+            Билеты заполнены.
+          <?php else: ?>
+            Заполнение билетов завершилось с ошибками.
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
       <?php if (is_array($tableInstallResult) || is_array($tableUninstallResult)): ?>
         <div class="homework-note">
           <?php if (is_array($tableInstallResult)): ?>
@@ -143,6 +188,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
             Удалить таблицы
           </button>
         </form>
+
+        <form method="post" class="homework-toolbar-form">
+          <?= bitrix_sessid_post() ?>
+          <button
+            type="submit"
+            name="fill_titanic_tickets"
+            value="Y"
+            class="homework-btn homework-btn--primary<?= !$ticketsCanBeImported ? ' homework-btn--disabled' : '' ?>"
+            <?= !$ticketsCanBeImported ? 'disabled' : '' ?>>
+            Заполнить билеты
+          </button>
+        </form>
       </div>
     </div>
   </div>
@@ -150,6 +207,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
   <div class="homework-section">
     <div class="homework-section-body">
       <div class="homework-status-list">
+        <div class="homework-note homework-note--spaced">
+          Это список установленных инфоблоков Titanic.
+        </div>
         <?php foreach ($dictionaryInstallers as $dictionaryInstaller): ?>
           <div class="homework-status-row">
             <div>
@@ -166,6 +226,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
       </div>
 
       <div class="homework-status-list" style="margin-top: 18px;">
+        <div class="homework-note homework-note--spaced">
+          Это список кастомных таблиц Titanic.
+        </div>
         <?php foreach ($tableStates as $tableClass => $tableState): ?>
           <div class="homework-status-row">
             <div>
@@ -200,6 +263,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
       <?php if (is_array($tableUninstallResult) && !empty($tableUninstallResult['errors'])): ?>
         <div class="homework-note homework-note--spaced">
           <?php foreach ($tableUninstallResult['errors'] as $error): ?>
+            <div><?= htmlspecialcharsbx((string)$error) ?></div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (is_array($ticketsImportResult) && !empty($ticketsImportResult['errors'])): ?>
+        <div class="homework-note homework-note--spaced">
+          <?php foreach ($ticketsImportResult['errors'] as $error): ?>
             <div><?= htmlspecialcharsbx((string)$error) ?></div>
           <?php endforeach; ?>
         </div>

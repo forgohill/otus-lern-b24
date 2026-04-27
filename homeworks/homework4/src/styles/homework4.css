@@ -125,6 +125,7 @@ body {
 .homework-status-list {
   display: grid;
   gap: 12px;
+  max-width: 40%;
 }
 
 .homework-status-row {

@@ -179,21 +179,25 @@ final class TitanicTicketsImporter
             ];
         }
 
-        if (preg_match('/^(.*\D)\s+(\d+)$/u', $ticketRaw, $matches) === 1) {
-            $prefix = preg_replace('/[^a-z0-9]+/i', '', $matches[1]) ?? '';
-            $prefix = strtoupper($prefix);
+        $number = '';
+        $prefixSource = $ticketRaw;
 
-            if ($prefix === '') {
-                $prefix = 'NUMERIC';
-            }
-
-            return [
-                'prefix' => $prefix,
-                'number' => $matches[2],
-            ];
+        if (preg_match('/^(.*?)(\d+)\s*$/u', $ticketRaw, $matches) === 1) {
+            $prefixSource = $matches[1];
+            $number = $matches[2];
         }
 
-        throw new \RuntimeException(sprintf('Unable to normalize ticket "%s".', $ticketRaw));
+        $prefix = preg_replace('/[^a-z0-9]+/i', '', $prefixSource) ?? '';
+        $prefix = strtoupper($prefix);
+
+        if ($prefix === '') {
+            $prefix = 'NUMERIC';
+        }
+
+        return [
+            'prefix' => $prefix,
+            'number' => $number,
+        ];
     }
 
     private function buildTicketKey(string $prefix, string $number): string
@@ -232,7 +236,7 @@ final class TitanicTicketsImporter
         try {
             $connection->rollbackTransaction();
         } catch (\Throwable) {
-            // If rollback fails, we still need to return the original import error.
+            // Если откат завершится неудачей, нам все равно нужно будет вернуть исходную ошибку импорта.
         }
     }
 }

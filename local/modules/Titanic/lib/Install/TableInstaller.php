@@ -74,6 +74,48 @@ class TableInstaller
     }
 
     /**
+     * @return array<string, array{table: string, installed: bool}>
+     */
+    public function getTableStates(): array
+    {
+        $states = [];
+
+        foreach ($this->getTableClasses() as $tableClass) {
+            $tableName = $tableClass::getTableName();
+            $connection = Application::getConnection($tableClass::getConnectionName());
+
+            $states[$tableClass] = [
+                'table' => $tableName,
+                'installed' => $connection->isTableExists($tableName),
+            ];
+        }
+
+        return $states;
+    }
+
+    public function isInstalled(): bool
+    {
+        foreach ($this->getTableStates() as $state) {
+            if (!$state['installed']) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function isEmpty(): bool
+    {
+        foreach ($this->getTableStates() as $state) {
+            if ($state['installed']) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @return list<class-string<DataManager>>
      */
     public function getTableClasses(): array

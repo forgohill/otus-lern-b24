@@ -12,6 +12,7 @@ use Models\Titanic\Orm\PassengerCabinTable;
 use Models\Titanic\Orm\PassengersTable;
 use Models\Titanic\Orm\TicketsTable;
 use Models\Titanic\Service\Iblock\TitanicClassesIblock;
+use Models\Titanic\Service\Iblock\TitanicCabinDecksIblock;
 use Models\Titanic\Service\Iblock\TitanicPortsIblock;
 use RuntimeException;
 
@@ -73,6 +74,7 @@ final class TitanicPassengersImporter
             $ticketMap = $this->loadTicketMap();
             $classMap = $this->loadClassMap();
             $portMap = $this->loadPortMap();
+            $unknownDeckElementId = $this->loadUnknownDeckElementId();
             $cabinMap = $this->loadCabinMap($this->collectCabinCodesFromPassengers($passengers));
             $existingPassengers = $this->loadExistingPassengers(array_column($passengers, 'PASSENGER_EXTERNAL_ID'));
 
@@ -91,7 +93,11 @@ final class TitanicPassengersImporter
                 $ticketId = $this->resolveTicketId((string)$passengerData['TICKET_KEY'], $ticketMap);
                 $classElementId = $this->resolveClassElementId((int)$passengerData['PCLASS_VALUE'], $classMap);
                 $embarkedElementId = $this->resolvePortElementId($passengerData['EMBARKED_CODE'], $portMap);
-                $cabinDeckElementId = $this->resolveCabinDeckElementId($passengerData['CABIN_CODES'], $cabinMap);
+                $cabinDeckElementId = $this->resolveCabinDeckElementId(
+                    $passengerData['CABIN_CODES'],
+                    $cabinMap,
+                    $unknownDeckElementId
+                );
 
                 $payload = [
                     'PASSENGER_EXTERNAL_ID' => $passengerExternalId,
@@ -303,6 +309,24 @@ final class TitanicPassengersImporter
         return $map;
     }
 
+    private function loadUnknownDeckElementId(): int
+    {
+        $entityClass = TitanicCabinDecksIblock::getEntityDataClass();
+        $row = $entityClass::getList([
+            'select' => ['ID'],
+            'filter' => [
+                '=CODE' => 'unknown',
+            ],
+            'limit' => 1,
+        ])->fetch();
+
+        if (is_array($row) && isset($row['ID'])) {
+            return (int)$row['ID'];
+        }
+
+        throw new RuntimeException('Не найдена палуба unknown в инфоблоке палуб.');
+    }
+
     /**
      * @param list<string> $cabinCodes
      *
@@ -452,10 +476,10 @@ final class TitanicPassengersImporter
      * @param list<string> $cabinCodes
      * @param array<string, array{ID: int, DECK_ELEMENT_ID: int}> $cabinMap
      */
-    private function resolveCabinDeckElementId(array $cabinCodes, array $cabinMap): ?int
+    private function resolveCabinDeckElementId(array $cabinCodes, array $cabinMap, int $unknownDeckElementId): int
     {
         if ($cabinCodes === []) {
-            return null;
+            return $unknownDeckElementId;
         }
 
         foreach ($cabinCodes as $cabinCode) {

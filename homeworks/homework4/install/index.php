@@ -3,8 +3,10 @@
 use Models\Titanic\Install\IblockInstaller;
 use Models\Titanic\Install\TableInstaller;
 use Models\Titanic\Orm\CabinsTable;
+use Models\Titanic\Orm\PassengersTable;
 use Models\Titanic\Orm\TicketsTable;
 use Models\Titanic\Service\TitanicCabinsImporter;
+use Models\Titanic\Service\TitanicPassengersImporter;
 use Models\Titanic\Service\TitanicTicketsImporter;
 use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
@@ -24,6 +26,7 @@ Asset::getInstance()->addCss('/homeworks/homework4/src/styles/homework4.css');
 $installer = new IblockInstaller();
 $tableInstaller = new TableInstaller();
 $cabinsImporter = new TitanicCabinsImporter();
+$passengersImporter = new TitanicPassengersImporter();
 $ticketsImporter = new TitanicTicketsImporter();
 
 $installResult = null;
@@ -31,9 +34,11 @@ $tableInstallResult = null;
 $tableUninstallResult = null;
 $ticketsImportResult = $_SESSION['homework4_tickets_import_result'] ?? null;
 $cabinsImportResult = $_SESSION['homework4_cabins_import_result'] ?? null;
+$passengersImportResult = $_SESSION['homework4_passengers_import_result'] ?? null;
 
 unset($_SESSION['homework4_tickets_import_result']);
 unset($_SESSION['homework4_cabins_import_result']);
+unset($_SESSION['homework4_passengers_import_result']);
 
 $dictionaryInstallers = $installer->getDictionaryInstallers();
 $tableStates = $tableInstaller->getTableStates();
@@ -50,6 +55,7 @@ foreach ($dictionaryInstallers as $dictionaryInstaller) {
 $tablesInstalled = $tableInstaller->isInstalled();
 $ticketsFilled = false;
 $cabinsFilled = false;
+$passengersFilled = false;
 
 if ($tablesInstalled) {
   $ticketsFilled = (bool)TicketsTable::getList([
@@ -61,11 +67,17 @@ if ($tablesInstalled) {
     'select' => ['ID'],
     'limit' => 1,
   ])->fetch();
+
+  $passengersFilled = (bool)PassengersTable::getList([
+    'select' => ['ID'],
+    'limit' => 1,
+  ])->fetch();
 }
 
 $tablesCanBeInstalled = $allIblocksInstalled;
 $ticketsCanBeImported = $allIblocksInstalled && $tablesInstalled && !$ticketsFilled;
 $cabinsCanBeImported = $allIblocksInstalled && $tablesInstalled && $ticketsFilled && !$cabinsFilled;
+$passengersCanBeImported = $allIblocksInstalled && $tablesInstalled && $ticketsFilled && $cabinsFilled && !$passengersFilled;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['install_titanic_iblocks'])) {
   $installResult = $installer->install();
@@ -93,6 +105,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['fill_titanic_cabins'])) {
   $cabinsImportResult = $cabinsImporter->import($_SERVER['DOCUMENT_ROOT'] . '/homeworks/homework4/titanic.csv');
   $_SESSION['homework4_cabins_import_result'] = $cabinsImportResult;
+  LocalRedirect($APPLICATION->GetCurPage(false));
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_POST['fill_titanic_passengers'])) {
+  $passengersImportResult = $passengersImporter->import($_SERVER['DOCUMENT_ROOT'] . '/homeworks/homework4/titanic.csv');
+  $_SESSION['homework4_passengers_import_result'] = $passengersImportResult;
   LocalRedirect($APPLICATION->GetCurPage(false));
 }
 ?>
@@ -162,6 +180,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
             Сначала заполните билеты.
           <?php elseif ($cabinsFilled): ?>
             Каюты уже заполнены.
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!$passengersCanBeImported): ?>
+        <div class="homework-note">
+          <?php if (!$allIblocksInstalled): ?>
+            Сначала установите нужные инфоблоки, таблицы, билеты и каюты.
+          <?php elseif (!$tablesInstalled): ?>
+            Сначала установите пользовательские таблицы, заполните билеты и каюты.
+          <?php elseif (!$ticketsFilled): ?>
+            Сначала заполните билеты.
+          <?php elseif (!$cabinsFilled): ?>
+            Сначала заполните каюты.
+          <?php elseif ($passengersFilled): ?>
+            Пассажиры уже заполнены.
           <?php endif; ?>
         </div>
       <?php endif; ?>
@@ -242,6 +276,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
             class="homework-btn homework-btn--primary<?= !$cabinsCanBeImported ? ' homework-btn--disabled' : '' ?>"
             <?= !$cabinsCanBeImported ? 'disabled' : '' ?>>
             Заполнить каюты
+          </button>
+        </form>
+
+        <form method="post" class="homework-toolbar-form">
+          <?= bitrix_sessid_post() ?>
+          <button
+            type="submit"
+            name="fill_titanic_passengers"
+            value="Y"
+            class="homework-btn homework-btn--primary<?= !$passengersCanBeImported ? ' homework-btn--disabled' : '' ?>"
+            <?= !$passengersCanBeImported ? 'disabled' : '' ?>>
+            Заполнить пассажиров
           </button>
         </form>
       </div>
@@ -333,6 +379,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && check_bitrix_sessid() && isset($_PO
       <?php if (is_array($cabinsImportResult) && !empty($cabinsImportResult['errors'])): ?>
         <div class="homework-note homework-note--spaced">
           <?php foreach ($cabinsImportResult['errors'] as $error): ?>
+            <div><?= htmlspecialcharsbx((string)$error) ?></div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (is_array($passengersImportResult)): ?>
+        <div class="homework-note homework-note--spaced">
+          <?php if (!empty($passengersImportResult['success'])): ?>
+            Пассажиры заполнены.
+          <?php else: ?>
+            Заполнение пассажиров завершилось с ошибками.
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (is_array($passengersImportResult) && !empty($passengersImportResult['errors'])): ?>
+        <div class="homework-note homework-note--spaced">
+          <?php foreach ($passengersImportResult['errors'] as $error): ?>
             <div><?= htmlspecialcharsbx((string)$error) ?></div>
           <?php endforeach; ?>
         </div>

@@ -3,7 +3,9 @@ html {
 }
 
 body {
-  font-family: "Open Sans", Arial, sans-serif;
+  font-family: "Manrope", Arial, sans-serif;
+  font-weight: 500;
+  line-height: 1.2;
   color: #1f2d3d;
 }
 
@@ -23,15 +25,13 @@ body {
 .homework-title {
   margin: 0 0 12px;
   font-size: 26px;
-  line-height: 32px;
-  font-weight: 600;
+  font-weight: 500;
   color: #1f2d3d;
 }
 
 .homework-subtitle {
   margin: 0 0 20px;
   font-size: 15px;
-  line-height: 22px;
   color: #5d6470;
 }
 
@@ -55,8 +55,8 @@ body {
   border: 1px solid transparent;
   text-decoration: none;
   font-size: 14px;
-  line-height: 1;
-  font-weight: 600;
+  font-weight: 500;
+  cursor: pointer;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
@@ -86,13 +86,29 @@ body {
   border-color: #cfd6df;
 }
 
+.homework-btn--danger-hover:hover {
+  color: #ffffff;
+  background: #ff5752;
+  border-color: #ff5752;
+}
+
+.homework-btn--success {
+  color: #000000;
+  background: #9dcf00;
+}
+
+.homework-btn--success:hover {
+  color: #000000;
+  background: #8ab800;
+}
+
 .homework-btn--disabled,
 .homework-btn--disabled:hover,
 .homework-btn--disabled:focus {
   color: #8a919d;
   background: #f4f6f8;
   border-color: #dfe5ec;
-  cursor: not-allowed;
+  cursor: default;
   box-shadow: none;
   transform: none;
 }
@@ -125,7 +141,17 @@ body {
 .homework-status-list {
   display: grid;
   gap: 12px;
-  max-width: 40%;
+}
+
+.homework-status-list--wide {
+  max-width: none;
+}
+
+.homework-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
 }
 
 .homework-status-row {
@@ -142,15 +168,13 @@ body {
 .homework-status-title {
   margin: 0;
   font-size: 15px;
-  line-height: 22px;
-  font-weight: 600;
+  font-weight: 500;
   color: #1f2d3d;
 }
 
 .homework-status-text {
   margin: 4px 0 0;
   font-size: 13px;
-  line-height: 18px;
   color: #5d6470;
 }
 
@@ -163,8 +187,7 @@ body {
   padding: 0 12px;
   border-radius: 999px;
   font-size: 13px;
-  line-height: 1;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .homework-status-badge--ok {
@@ -175,6 +198,49 @@ body {
 .homework-status-badge--warn {
   color: #8a5a00;
   background: #fff4df;
+}
+
+.homework-setup-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #dfe5ec;
+  border-radius: 12px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.homework-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.homework-topic-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: 24px;
+  border: 1px solid #dfe5ec;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #1f2d3d;
+  font-size: 20px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.homework-topic-card:hover {
+  color: #1f2d3d;
+  border-color: #2f7cf6;
+  box-shadow: 0 12px 28px rgba(47, 124, 246, 0.14);
+  text-decoration: none;
+  transform: translateY(-2px);
 }
 
 @media (max-width: 768px) {
@@ -188,10 +254,18 @@ body {
 
   .homework-title {
     font-size: 24px;
-    line-height: 30px;
   }
 
   .homework-status-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .homework-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .homework-setup-banner {
     align-items: flex-start;
     flex-direction: column;
   }

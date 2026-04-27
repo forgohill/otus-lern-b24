@@ -1,19 +1,51 @@
 <?
 
+use Models\Titanic\Install\IblockInstaller;
+use Models\Titanic\Install\TableInstaller;
 use Bitrix\Main\Page\Asset;
-use Bitrix\Main\Loader;
-use Bitrix\Main\UI\Extension;
 
 require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php"); ?>
 <?php
 $APPLICATION->SetTitle("ДЗ #4: Проект Titanic");
 
-Loader::includeModule('ui');
-Extension::load([
-  'ui.fonts.opensans',
-]);
-
+Asset::getInstance()->addString('<link rel="preconnect" href="https://fonts.googleapis.com">');
+Asset::getInstance()->addString('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>');
+Asset::getInstance()->addString('<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap" rel="stylesheet">');
 Asset::getInstance()->addCss('/homeworks/homework4/src/styles/homework4.css');
+
+$iblockInstaller = new IblockInstaller();
+$tableInstaller = new TableInstaller();
+$allIblocksInstalled = true;
+
+foreach ($iblockInstaller->getDictionaryInstallers() as $dictionaryInstaller) {
+  if (!$dictionaryInstaller->isInstalled()) {
+    $allIblocksInstalled = false;
+    break;
+  }
+}
+
+$allTablesInstalled = $tableInstaller->isInstalled();
+$allTablesFilled = $allTablesInstalled;
+$tableStates = $tableInstaller->getTableStates();
+
+foreach ($tableInstaller->getTableClasses() as $tableClass) {
+  if (empty($tableStates[$tableClass]['installed'])) {
+    $allTablesFilled = false;
+    break;
+  }
+
+  try {
+    if ((int)$tableClass::getCount() === 0) {
+      $allTablesFilled = false;
+      break;
+    }
+  } catch (\Throwable) {
+    $allTablesFilled = false;
+    break;
+  }
+}
+
+$titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
 ?>
 <div class="homework-page">
   <div class="homework-hero">
@@ -26,6 +58,28 @@ Asset::getInstance()->addCss('/homeworks/homework4/src/styles/homework4.css');
       <a class="homework-btn homework-btn--primary" href="/homeworks/homework4/install/index.php">
         Открыть инсталятор
       </a>
+    </div>
+  </div>
+
+  <div class="homework-section">
+    <div class="homework-section-body">
+      <?php if (!$titanicReady): ?>
+        <div class="homework-setup-banner">
+          <div>
+            <p class="homework-status-title">Приложение Titanic ещё не готово к работе</p>
+            <p class="homework-status-text">
+              Для работы с приложением Titanic необходимо установить и заполнить его данные.
+              Приложение недоступно, нажмите кнопку «Открыть инсталятор» выше.
+            </p>
+          </div>
+        </div>
+      <?php else: ?>
+        <div class="homework-topic-grid">
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection1.php">
+            «Шанс на спасение: пол и класс решали больше, чем возраст»
+          </a>
+        </div>
+      <?php endif; ?>
     </div>
   </div>
 </div>

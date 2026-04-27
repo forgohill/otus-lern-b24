@@ -94,7 +94,8 @@ class PassengersTable extends DataManager
 			'AGE' => (new FloatField(
 				'AGE',
 				[]
-			))->configureTitle(Loc::getMessage('PASSENGERS_ENTITY_AGE_FIELD')),
+			))->configureTitle(Loc::getMessage('PASSENGERS_ENTITY_AGE_FIELD'))
+				->configureNullable(true),
 			'SIBSP' => (new IntegerField(
 				'SIBSP',
 				[]
@@ -139,7 +140,8 @@ class PassengersTable extends DataManager
 				[
 					'validation' => [__CLASS__, 'validateCabinRaw']
 				]
-			))->configureTitle(Loc::getMessage('PASSENGERS_ENTITY_CABIN_RAW_FIELD')),
+			))->configureTitle(Loc::getMessage('PASSENGERS_ENTITY_CABIN_RAW_FIELD'))
+				->configureNullable(true),
 
 			(new Reference('TICKET', Ticket::class, Join::on('this.TICKET_ID', 'ref.ID')))
 				->configureJoinType('left'),

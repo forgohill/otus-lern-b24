@@ -87,6 +87,9 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
           <a class="homework-topic-card" href="/homeworks/homework4/cards/selection4.php">
             «Титул в имени: скрытая социальная роль»
           </a>
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection5.php">
+            «Граница детства: когда шанс на спасение резко падал»
+          </a>
         </div>
       <?php endif; ?>
     </div>

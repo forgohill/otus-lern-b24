@@ -243,6 +243,58 @@ body {
   transform: translateY(-2px);
 }
 
+.homework-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e5e8ec;
+  border-radius: 12px;
+}
+
+.homework-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.homework-table th,
+.homework-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e8ec;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.homework-table th {
+  color: #5d6470;
+  background: #f8fafc;
+  font-weight: 500;
+}
+
+.homework-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.homework-report-summary {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid #e5e8ec;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #1f2d3d;
+}
+
+.homework-report-summary h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.homework-report-summary p {
+  margin: 0;
+  color: #5d6470;
+}
+
 @media (max-width: 768px) {
   .homework-page {
     padding: 16px 12px 36px;

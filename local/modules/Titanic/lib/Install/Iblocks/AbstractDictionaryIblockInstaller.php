@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Models\Titanic\Install\Iblocks;
 
+use Bitrix\Main\Localization\Loc;
 use Models\Titanic\Config\TitanicConfig;
 use Bitrix\Iblock\IblockTable;
 use Bitrix\Main\Config\Option;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Базовый установщик простого инфоблока-справочника с элементами CODE/NAME.
@@ -41,7 +44,9 @@ abstract class AbstractDictionaryIblockInstaller
         'id' => null,
         'created' => false,
         'elements_created' => 0,
-        'errors' => ['Не удалось создать инфоблок ' . $this->getCode()],
+        'errors' => [(string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_IBLOCK_CREATE_FAILED', [
+          '#CODE#' => $this->getCode(),
+        ])],
       ];
     }
 
@@ -139,10 +144,10 @@ abstract class AbstractDictionaryIblockInstaller
   public function getInstallStatus(): string
   {
     if (!$this->isInstalled()) {
-      return 'Не установлен';
+      return (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_STATUS_NOT_INSTALLED');
     }
 
-    return 'Установлен';
+    return (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_STATUS_INSTALLED');
   }
 
   /**
@@ -207,7 +212,10 @@ abstract class AbstractDictionaryIblockInstaller
       $elementId = $this->createElement($iblockId, $element['CODE'], $element['NAME']);
 
       if ($elementId === null) {
-        $errors[] = 'Не удалось создать элемент ' . $element['CODE'] . ' в инфоблоке ' . $this->getCode();
+        $errors[] = (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_ELEMENT_CREATE_FAILED', [
+          '#ELEMENT_CODE#' => $element['CODE'],
+          '#CODE#' => $this->getCode(),
+        ]);
         continue;
       }
 
@@ -274,25 +282,37 @@ abstract class AbstractDictionaryIblockInstaller
     ]);
 
     if ($iblock === null) {
-      return ['Инфоблок ' . $this->getCode() . ' не найден после определения ID.'];
+      return [
+        (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_IBLOCK_NOT_FOUND_AFTER_ID', [
+          '#CODE#' => $this->getCode(),
+        ]),
+      ];
     }
 
     $errors = [];
 
     if ((string)($iblock['IBLOCK_TYPE_ID'] ?? '') !== TitanicConfig::IBLOCK_TYPE_ID) {
-      $errors[] = 'Инфоблок ' . $this->getCode() . ' найден в другом типе инфоблоков.';
+      $errors[] = (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_IBLOCK_WRONG_TYPE', [
+        '#CODE#' => $this->getCode(),
+      ]);
     }
 
     if ((string)($iblock['CODE'] ?? '') !== $this->getCode()) {
-      $errors[] = 'Инфоблок ' . $this->getCode() . ' найден по другому коду.';
+      $errors[] = (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_IBLOCK_WRONG_CODE', [
+        '#CODE#' => $this->getCode(),
+      ]);
     }
 
     if ((string)($iblock['NAME'] ?? '') !== $this->getName()) {
-      $errors[] = 'У инфоблока ' . $this->getCode() . ' неверное название.';
+      $errors[] = (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_IBLOCK_WRONG_NAME', [
+        '#CODE#' => $this->getCode(),
+      ]);
     }
 
     if ((string)($iblock['API_CODE'] ?? '') !== $this->getApiCode()) {
-      $errors[] = 'У инфоблока ' . $this->getCode() . ' неверный API_CODE.';
+      $errors[] = (string)Loc::getMessage('TITANIC_ABSTRACT_DICTIONARY_IBLOCK_INSTALLER_IBLOCK_WRONG_API_CODE', [
+        '#CODE#' => $this->getCode(),
+      ]);
     }
 
     return $errors;

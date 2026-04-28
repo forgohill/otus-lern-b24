@@ -93,6 +93,9 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
           <a class="homework-topic-card" href="/homeworks/homework4/cards/selection6.php">
             «Где ты жил на Titanic - там и начиналась статистика выживания»
           </a>
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection7.php">
+            «Несколько кают у одного пассажира»
+          </a>
         </div>
       <?php endif; ?>
     </div>

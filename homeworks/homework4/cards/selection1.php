@@ -30,8 +30,14 @@ try {
     <h1 class="homework-title"><? $APPLICATION->ShowTitle() ?></h1>
     <div class="homework-subtitle">«Шанс на спасение: пол и класс решали больше, чем возраст»</div>
     <div class="homework-toolbar">
+      <span class="homework-btn homework-btn--secondary homework-btn--disabled" aria-disabled="true">
+        Предыдущая
+      </span>
       <a class="homework-btn homework-btn--secondary" href="/homeworks/homework4/index.php">
         Назад
+      </a>
+      <a class="homework-btn homework-btn--secondary" href="/homeworks/homework4/cards/selection2.php">
+        Следующая
       </a>
     </div>
   </div>

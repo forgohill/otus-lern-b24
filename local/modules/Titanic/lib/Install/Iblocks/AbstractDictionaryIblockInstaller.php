@@ -9,11 +9,19 @@ use Bitrix\Iblock\IblockTable;
 use Bitrix\Main\Config\Option;
 
 /**
- * Базовая установка простого инфоблока-справочника с элементами CODE/NAME.
+ * Базовый установщик простого инфоблока-справочника с элементами CODE/NAME.
+ *
+ * Наследники задают код, название, API_CODE, имя опции и список элементов,
+ * которые должны быть добавлены в инфоблок при установке.
  */
 abstract class AbstractDictionaryIblockInstaller
 {
   /**
+   * Устанавливает инфоблок-справочник и его элементы.
+   *
+   * Если инфоблок уже существует, он не создаётся заново.
+   * Если элементы уже есть, они также не создаются повторно.
+   *
    * @return array{success: bool, id: int|null, created: bool, elements_created: int, errors: list<string>}
    */
   public function install(): array
@@ -62,24 +70,56 @@ abstract class AbstractDictionaryIblockInstaller
     ];
   }
 
+  /**
+   * Возвращает код инфоблока.
+   *
+   * @return non-empty-string
+   */
   abstract public function getCode(): string;
 
+  /**
+   * Возвращает название инфоблока.
+   *
+   * @return non-empty-string
+   */
   abstract protected function getName(): string;
 
+  /**
+   * Возвращает API_CODE инфоблока.
+   *
+   * @return non-empty-string
+   */
   abstract protected function getApiCode(): string;
 
+  /**
+   * Возвращает имя опции модуля, в которой хранится ID инфоблока.
+   *
+   * @return non-empty-string
+   */
   abstract protected function getOptionName(): string;
 
   /**
+   * Возвращает список элементов, которые нужно создать в инфоблоке.
+   *
    * @return list<array{CODE: string, NAME: string}>
    */
   abstract protected function getElements(): array;
 
+  /**
+   * Возвращает название инфоблока для вывода в интерфейсе.
+   *
+   * @return string
+   */
   public function getTitle(): string
   {
     return $this->getName();
   }
 
+  /**
+   * Проверяет, установлен ли инфоблок и соответствует ли он ожидаемой конфигурации.
+   *
+   * @return bool
+   */
   public function isInstalled(): bool
   {
     $iblockId = $this->findIblockId();
@@ -91,6 +131,11 @@ abstract class AbstractDictionaryIblockInstaller
     return $this->validateIblock($iblockId) === [];
   }
 
+  /**
+   * Возвращает строковый статус установки инфоблока.
+   *
+   * @return string
+   */
   public function getInstallStatus(): string
   {
     if (!$this->isInstalled()) {
@@ -100,6 +145,11 @@ abstract class AbstractDictionaryIblockInstaller
     return 'Установлен';
   }
 
+  /**
+   * Ищет ID инфоблока по типу и коду.
+   *
+   * @return int|null
+   */
   private function findIblockId(): ?int
   {
     $iblock = IblockTable::getRow([
@@ -113,6 +163,11 @@ abstract class AbstractDictionaryIblockInstaller
     return $iblock === null ? null : (int)$iblock['ID'];
   }
 
+  /**
+   * Создаёт инфоблок в системе.
+   *
+   * @return int|null
+   */
   private function createIblock(): ?int
   {
     $iblock = new \CIBlock();
@@ -134,7 +189,11 @@ abstract class AbstractDictionaryIblockInstaller
   }
 
   /**
+   * Создаёт недостающие элементы инфоблока.
+   *
    * @param list<string> $errors
+   *
+   * @return int Количество созданных элементов.
    */
   private function ensureElements(int $iblockId, array &$errors): int
   {
@@ -158,6 +217,11 @@ abstract class AbstractDictionaryIblockInstaller
     return $created;
   }
 
+  /**
+   * Ищет элемент инфоблока по коду.
+   *
+   * @return int|null
+   */
   private function findElementId(int $iblockId, string $code): ?int
   {
     $iterator = \CIBlockElement::GetList(
@@ -176,6 +240,11 @@ abstract class AbstractDictionaryIblockInstaller
     return is_array($element) ? (int)$element['ID'] : null;
   }
 
+  /**
+   * Создаёт элемент инфоблока.
+   *
+   * @return int|null
+   */
   private function createElement(int $iblockId, string $code, string $name): ?int
   {
     $element = new \CIBlockElement();
@@ -191,6 +260,8 @@ abstract class AbstractDictionaryIblockInstaller
   }
 
   /**
+   * Проверяет, что найденный инфоблок соответствует ожидаемой конфигурации.
+   *
    * @return list<string>
    */
   private function validateIblock(int $iblockId): array

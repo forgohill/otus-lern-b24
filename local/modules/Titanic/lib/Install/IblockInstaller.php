@@ -12,16 +12,25 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\SystemException;
 
 /**
- * Обработчик установки инфоблоков-справочников проекта Titanic.
+ * Обработчик установки справочных инфоблоков проекта Titanic.
+ *
+ * Собирает установщики отдельных инфоблоков, подключает модуль `iblock`
+ * и возвращает общий результат установки.
  */
 class IblockInstaller
 {
   /**
+   * Устанавливает все справочные инфоблоки проекта.
+   *
+   * Возвращает общий результат установки и результаты по каждому инфоблоку.
+   *
    * @return array{
    *   success: bool,
    *   iblocks: array<string, array<string, mixed>>,
    *   errors: list<string>
    * }
+   *
+   * @throws SystemException Если модуль `iblock` не удалось подключить.
    */
   public function install(): array
   {
@@ -47,6 +56,8 @@ class IblockInstaller
   }
 
   /**
+   * Возвращает список установщиков справочных инфоблоков.
+   *
    * @return list<Iblocks\AbstractDictionaryIblockInstaller>
    */
   public function getDictionaryInstallers(): array
@@ -58,6 +69,11 @@ class IblockInstaller
     ];
   }
 
+  /**
+   * Подключает модуль `iblock` перед выполнением установки.
+   *
+   * @throws SystemException Если модуль `iblock` не подключён.
+   */
   private function loadIblockModule(): void
   {
     if (!Loader::includeModule('iblock')) {

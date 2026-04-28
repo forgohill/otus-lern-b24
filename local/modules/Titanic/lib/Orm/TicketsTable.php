@@ -18,25 +18,30 @@ use Models\Titanic\Orm\PassengersTable as Passengers;
 Loc::loadMessages(__FILE__);
 
 /**
- * Class TicketsTable
- * 
- * Fields:
+ * ORM-сущность для таблицы билетов.
+ *
+ * Поля:
  * <ul>
- * <li> ID int mandatory
- * <li> TICKET_RAW string(100) mandatory
- * <li> TICKET_PREFIX string(50) optional
- * <li> TICKET_NUMBER string(50) optional
- * <li> PASSENGER_COUNT int optional default 0
- * <li> FARE_TOTAL double optional
+ * <li> ID int, обязательное, первичный ключ
+ * <li> TICKET_RAW string(100), обязательное
+ * <li> TICKET_PREFIX string(50), необязательное
+ * <li> TICKET_NUMBER string(50), необязательное
+ * <li> PASSENGER_COUNT int, необязательное, по умолчанию 0
+ * <li> FARE_TOTAL double, необязательное
  * </ul>
  *
- * @package Bitrix\Titanic
+ * Связи:
+ * <ul>
+ * <li> `PASSENGERS` - отношение один-ко-многим к пассажирам</li>
+ * </ul>
+ *
+ * @package Models\Titanic\Orm
  **/
 
 class TicketsTable extends DataManager
 {
  /**
-  * Returns DB table name for entity.
+  * Возвращает имя таблицы базы данных для сущности.
   *
   * @return string
   */
@@ -46,7 +51,7 @@ class TicketsTable extends DataManager
  }
 
  /**
-  * Returns entity map definition.
+  * Возвращает описание полей и связей сущности.
   *
   * @return array
   */
@@ -93,7 +98,7 @@ class TicketsTable extends DataManager
  }
 
  /**
-  * Returns validators for TICKET_RAW field.
+  * Возвращает валидаторы для поля TICKET_RAW.
   *
   * @return array
   */
@@ -105,7 +110,7 @@ class TicketsTable extends DataManager
  }
 
  /**
-  * Returns validators for TICKET_PREFIX field.
+  * Возвращает валидаторы для поля TICKET_PREFIX.
   *
   * @return array
   */
@@ -117,7 +122,7 @@ class TicketsTable extends DataManager
  }
 
  /**
-  * Returns validators for TICKET_NUMBER field.
+  * Возвращает валидаторы для поля TICKET_NUMBER.
   *
   * @return array
   */

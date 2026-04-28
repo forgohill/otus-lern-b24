@@ -23,33 +23,42 @@ use Models\Titanic\Service\Iblock\TitanicCabinDecksIblock  as TitanicCabinDecks;
 Loc::loadMessages(__FILE__);
 
 /**
- * Class PassengersTable
- * 
- * Fields:
+ * ORM-сущность для таблицы пассажиров.
+ *
+ * Поля:
  * <ul>
- * <li> ID int mandatory
- * <li> PASSENGER_EXTERNAL_ID int mandatory
- * <li> FULL_NAME string(255) mandatory
- * <li> SEX string(20) mandatory
- * <li> AGE double optional
- * <li> SIBSP int optional default 0
- * <li> PARCH int optional default 0
- * <li> FARE double optional default 0.00
- * <li> SURVIVED int optional default 0
- * <li> TICKET_ID int mandatory
- * <li> PCLASS_ELEMENT_ID int mandatory
- * <li> EMBARKED_ELEMENT_ID int optional
- * <li> CABIN_DECK_ELEMENT_ID int optional
- * <li> CABIN_RAW string(255) optional
+ * <li> ID int, обязательное, первичный ключ
+ * <li> PASSENGER_EXTERNAL_ID int, обязательное
+ * <li> FULL_NAME string(255), обязательное
+ * <li> SEX string(20), обязательное
+ * <li> AGE double, необязательное
+ * <li> SIBSP int, необязательное, по умолчанию 0
+ * <li> PARCH int, необязательное, по умолчанию 0
+ * <li> FARE double, необязательное, по умолчанию 0.00
+ * <li> SURVIVED int, необязательное, по умолчанию 0
+ * <li> TICKET_ID int, обязательное
+ * <li> PCLASS_ELEMENT_ID int, обязательное
+ * <li> EMBARKED_ELEMENT_ID int, необязательное
+ * <li> CABIN_DECK_ELEMENT_ID int, необязательное
+ * <li> CABIN_RAW string(255), необязательное
  * </ul>
  *
- * @package Bitrix\Titanic
+ * Связи:
+ * <ul>
+ * <li> `TICKET` - ссылка на билет</li>
+ * <li> `PCLASS_ELEMENT` - ссылка на элемент инфоблока классов</li>
+ * <li> `EMBARKED_ELEMENT` - ссылка на элемент инфоблока портов посадки</li>
+ * <li> `CABIN_DECK_ELEMENT` - ссылка на элемент инфоблока палуб кают</li>
+ * <li> `CABINS` - связь многие-ко-многим с каютами</li>
+ * </ul>
+ *
+ * @package Models\Titanic\Orm
  **/
 
 class PassengersTable extends DataManager
 {
 	/**
-	 * Returns DB table name for entity.
+	 * Возвращает имя таблицы базы данных для сущности.
 	 *
 	 * @return string
 	 */
@@ -59,7 +68,7 @@ class PassengersTable extends DataManager
 	}
 
 	/**
-	 * Returns entity map definition.
+	 * Возвращает описание полей и связей сущности.
 	 *
 	 * @return array
 	 */
@@ -162,7 +171,7 @@ class PassengersTable extends DataManager
 	}
 
 	/**
-	 * Returns validators for FULL_NAME field.
+	 * Возвращает валидаторы для поля FULL_NAME.
 	 *
 	 * @return array
 	 */
@@ -174,7 +183,7 @@ class PassengersTable extends DataManager
 	}
 
 	/**
-	 * Returns validators for SEX field.
+	 * Возвращает валидаторы для поля SEX.
 	 *
 	 * @return array
 	 */
@@ -186,7 +195,7 @@ class PassengersTable extends DataManager
 	}
 
 	/**
-	 * Returns validators for CABIN_RAW field.
+	 * Возвращает валидаторы для поля CABIN_RAW.
 	 *
 	 * @return array
 	 */

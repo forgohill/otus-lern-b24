@@ -13,11 +13,18 @@ use Models\Titanic\Orm\PassengersTable;
 use Models\Titanic\Orm\TicketsTable;
 
 /**
- * Installs Titanic database tables from D7 ORM DataManager definitions.
+ * Устанавливает таблицы базы данных Titanic по определениям ORM-классов D7.
+ *
+ * Использует `DataManager`-классы как источник схемы таблиц и создаёт
+ * или удаляет таблицы через соединение БД Bitrix.
  */
 class TableInstaller
 {
     /**
+     * Устанавливает все таблицы модуля.
+     *
+     * Возвращает общий результат и подробности по каждой таблице.
+     *
      * @return array{
      *   success: bool,
      *   tables: array<string, array{success: bool, table: string|null, created: bool, errors: list<string>}>,
@@ -46,6 +53,10 @@ class TableInstaller
     }
 
     /**
+     * Удаляет все таблицы модуля.
+     *
+     * Возвращает общий результат и подробности по каждой таблице.
+     *
      * @return array{
      *   success: bool,
      *   tables: array<string, array{success: bool, table: string|null, dropped: bool, errors: list<string>}>,
@@ -74,6 +85,8 @@ class TableInstaller
     }
 
     /**
+     * Возвращает текущее состояние таблиц модуля.
+     *
      * @return array<string, array{table: string, installed: bool}>
      */
     public function getTableStates(): array
@@ -93,6 +106,11 @@ class TableInstaller
         return $states;
     }
 
+    /**
+     * Проверяет, установлены ли все таблицы модуля.
+     *
+     * @return bool
+     */
     public function isInstalled(): bool
     {
         foreach ($this->getTableStates() as $state) {
@@ -104,6 +122,11 @@ class TableInstaller
         return true;
     }
 
+    /**
+     * Проверяет, существуют ли ещё таблицы модуля в базе данных.
+     *
+     * @return bool
+     */
     public function isEmpty(): bool
     {
         foreach ($this->getTableStates() as $state) {
@@ -116,6 +139,8 @@ class TableInstaller
     }
 
     /**
+     * Возвращает список ORM-классов таблиц модуля в порядке установки.
+     *
      * @return list<class-string<DataManager>>
      */
     public function getTableClasses(): array
@@ -129,6 +154,8 @@ class TableInstaller
     }
 
     /**
+     * Возвращает список ORM-классов таблиц в обратном порядке для удаления.
+     *
      * @return list<class-string<DataManager>>
      */
     public function getUninstallTableClasses(): array
@@ -142,6 +169,8 @@ class TableInstaller
     }
 
     /**
+     * Создаёт таблицу по ORM-классу, если её ещё нет.
+     *
      * @param class-string<DataManager> $tableClass
      *
      * @return array{success: bool, table: string|null, created: bool, errors: list<string>}
@@ -187,6 +216,8 @@ class TableInstaller
     }
 
     /**
+     * Удаляет таблицу по ORM-классу, если она существует.
+     *
      * @param class-string<DataManager> $tableClass
      *
      * @return array{success: bool, table: string|null, dropped: bool, errors: list<string>}

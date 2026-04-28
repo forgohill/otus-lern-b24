@@ -9,21 +9,21 @@ use Bitrix\Main\ORM\Fields\IntegerField;
 Loc::loadMessages(__FILE__);
 
 /**
- * Class PassengerCabinTable
- * 
- * Fields:
+ * ORM-сущность для таблицы связей между пассажирами и каютами.
+ *
+ * Поля:
  * <ul>
- * <li> PASSENGER_ID int mandatory
- * <li> CABIN_ID int mandatory
+ * <li> PASSENGER_ID int, обязательное, входит в состав первичного ключа
+ * <li> CABIN_ID int, обязательное, входит в состав первичного ключа
  * </ul>
  *
- * @package Bitrix\Titanic
+ * @package Models\Titanic\Orm
  **/
 
 class PassengerCabinTable extends DataManager
 {
   /**
-   * Returns DB table name for entity.
+   * Возвращает имя таблицы базы данных для сущности.
    *
    * @return string
    */
@@ -33,7 +33,7 @@ class PassengerCabinTable extends DataManager
   }
 
   /**
-   * Returns entity map definition.
+   * Возвращает описание полей сущности.
    *
    * @return array
    */

@@ -20,23 +20,29 @@ use Models\Titanic\Service\Iblock\TitanicCabinDecksIblock  as TitanicCabinDecks;
 Loc::loadMessages(__FILE__);
 
 /**
- * Class CabinsTable
- * 
- * Fields:
+ * ORM-сущность для таблицы кают.
+ *
+ * Поля:
  * <ul>
- * <li> ID int mandatory
- * <li> CABIN_CODE string(50) mandatory
- * <li> DECK_CODE string(10) mandatory
- * <li> DECK_ELEMENT_ID int mandatory
+ * <li> ID int, обязательное, первичный ключ
+ * <li> CABIN_CODE string(50), обязательное
+ * <li> DECK_CODE string(10), обязательное
+ * <li> DECK_ELEMENT_ID int, обязательное
  * </ul>
  *
- * @package Bitrix\Titanic
+ * Связи:
+ * <ul>
+ * <li> `DECK_ELEMENT` - ссылка на элемент инфоблока палуб</li>
+ * <li> `PASSENGERS` - связь многие-ко-многим с пассажирами</li>
+ * </ul>
+ *
+ * @package Models\Titanic\Orm
  **/
 
 class CabinsTable extends DataManager
 {
   /**
-   * Returns DB table name for entity.
+   * Возвращает имя таблицы базы данных для сущности.
    *
    * @return string
    */
@@ -46,7 +52,7 @@ class CabinsTable extends DataManager
   }
 
   /**
-   * Returns entity map definition.
+   * Возвращает описание полей и связей сущности.
    *
    * @return array
    */
@@ -91,7 +97,7 @@ class CabinsTable extends DataManager
   }
 
   /**
-   * Returns validators for CABIN_CODE field.
+   * Возвращает валидаторы для поля CABIN_CODE.
    *
    * @return array
    */
@@ -103,7 +109,7 @@ class CabinsTable extends DataManager
   }
 
   /**
-   * Returns validators for DECK_CODE field.
+   * Возвращает валидаторы для поля DECK_CODE.
    *
    * @return array
    */

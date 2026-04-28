@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Models\Titanic\Install\Iblocks;
 
+use Bitrix\Main\Localization\Loc;
 use Models\Titanic\Config\TitanicConfig;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Установщик справочного инфоблока палуб кают.
@@ -59,15 +62,15 @@ class TitanicCabinDecksIblockInstaller extends AbstractDictionaryIblockInstaller
   protected function getElements(): array
   {
     return [
-      ['CODE' => 'A', 'NAME' => 'Палуба A'],
-      ['CODE' => 'B', 'NAME' => 'Палуба B'],
-      ['CODE' => 'C', 'NAME' => 'Палуба C'],
-      ['CODE' => 'D', 'NAME' => 'Палуба D'],
-      ['CODE' => 'E', 'NAME' => 'Палуба E'],
-      ['CODE' => 'F', 'NAME' => 'Палуба F'],
-      ['CODE' => 'G', 'NAME' => 'Палуба G'],
-      ['CODE' => 'T', 'NAME' => 'Палуба T'],
-      ['CODE' => 'unknown', 'NAME' => 'Палуба неизвестна'],
+      ['CODE' => 'A', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_A_NAME')],
+      ['CODE' => 'B', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_B_NAME')],
+      ['CODE' => 'C', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_C_NAME')],
+      ['CODE' => 'D', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_D_NAME')],
+      ['CODE' => 'E', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_E_NAME')],
+      ['CODE' => 'F', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_F_NAME')],
+      ['CODE' => 'G', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_G_NAME')],
+      ['CODE' => 'T', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_T_NAME')],
+      ['CODE' => 'unknown', 'NAME' => (string)Loc::getMessage('TITANIC_CABIN_DECKS_IBLOCK_INSTALLER_ELEMENT_UNKNOWN_NAME')],
     ];
   }
 }

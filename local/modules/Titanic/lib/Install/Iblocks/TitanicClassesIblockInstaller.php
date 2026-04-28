@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Models\Titanic\Install\Iblocks;
 
+use Bitrix\Main\Localization\Loc;
 use Models\Titanic\Config\TitanicConfig;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Установщик справочного инфоблока классов пассажиров.
@@ -59,9 +62,9 @@ class TitanicClassesIblockInstaller extends AbstractDictionaryIblockInstaller
   protected function getElements(): array
   {
     return [
-      ['CODE' => 'first', 'NAME' => 'Первый класс'],
-      ['CODE' => 'second', 'NAME' => 'Второй класс'],
-      ['CODE' => 'third', 'NAME' => 'Третий класс'],
+      ['CODE' => 'first', 'NAME' => (string)Loc::getMessage('TITANIC_CLASSES_IBLOCK_INSTALLER_ELEMENT_FIRST_NAME')],
+      ['CODE' => 'second', 'NAME' => (string)Loc::getMessage('TITANIC_CLASSES_IBLOCK_INSTALLER_ELEMENT_SECOND_NAME')],
+      ['CODE' => 'third', 'NAME' => (string)Loc::getMessage('TITANIC_CLASSES_IBLOCK_INSTALLER_ELEMENT_THIRD_NAME')],
     ];
   }
 }

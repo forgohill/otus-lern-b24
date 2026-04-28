@@ -58,6 +58,11 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
       <a class="homework-btn homework-btn--primary" href="/homeworks/homework4/install/index.php">
         Открыть инсталятор
       </a>
+      <?php if ($titanicReady): ?>
+        <a class="homework-btn homework-btn--primary" href="/homeworks/homework4/passengers.php">
+          Показать всю таблицу
+        </a>
+      <?php endif; ?>
     </div>
   </div>
 

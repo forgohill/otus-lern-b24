@@ -49,9 +49,9 @@ foreach ($reportRows as $row) {
       <a class="homework-btn homework-btn--secondary" href="/homeworks/homework4/index.php">
         Назад
       </a>
-      <span class="homework-btn homework-btn--secondary homework-btn--disabled" aria-disabled="true">
+      <a class="homework-btn homework-btn--secondary" href="/homeworks/homework4/cards/selection3.php">
         Следующая
-      </span>
+      </a>
     </div>
   </div>
 

@@ -81,6 +81,9 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
           <a class="homework-topic-card" href="/homeworks/homework4/cards/selection2.php">
             «Размер семьи: одиночки выживали хуже»
           </a>
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection3.php">
+            «Одиночка или не одиночка»
+          </a>
         </div>
       <?php endif; ?>
     </div>

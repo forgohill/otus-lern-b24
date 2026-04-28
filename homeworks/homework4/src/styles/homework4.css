@@ -273,6 +273,33 @@ body {
   border-bottom: 0;
 }
 
+.homework-table--passenger-info {
+  table-layout: fixed;
+}
+
+.homework-table--passenger-info th,
+.homework-table--passenger-info td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.homework-table--passenger-info th:nth-child(1),
+.homework-table--passenger-info td:nth-child(1) {
+  width: 150px;
+}
+
+.homework-table--passenger-info th:nth-child(2),
+.homework-table--passenger-info td:nth-child(2) {
+  width: 220px;
+}
+
+.homework-table__description {
+  max-width: 720px;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.55;
+}
+
 .homework-report-summary {
   display: grid;
   gap: 12px;

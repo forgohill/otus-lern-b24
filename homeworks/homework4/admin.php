@@ -3,6 +3,7 @@
 use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;
+use Models\Titanic\Repository\PassengersRepository;
 use Models\Titanic\Service\TitanicCsvParser;
 
 require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php");
@@ -26,8 +27,16 @@ if ($showDump) {
     $parser = new TitanicCsvParser();
     $parserRows = $parser->parse($csvPath);
 
+    $passengersRepository = new PassengersRepository();
+    $passengerFilter = [
+      '=SEX' => 'female',
+      '=SURVIVED' => 1,
+    ];
+
+    $collectionItems = $passengersRepository->getItems($passengerFilter);
+
     if (function_exists('dump')) {
-      dump(array_slice($parserRows, 0, 5));
+      dump($passengerFilter, $collectionItems);
     }
   } catch (\Throwable $exception) {
     $parserError = $exception->getMessage();

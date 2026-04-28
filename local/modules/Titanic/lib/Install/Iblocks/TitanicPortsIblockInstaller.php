@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Models\Titanic\Install\Iblocks;
 
+use Bitrix\Main\Localization\Loc;
 use Models\Titanic\Config\TitanicConfig;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Установщик справочного инфоблока портов посадки.
@@ -59,10 +62,10 @@ class TitanicPortsIblockInstaller extends AbstractDictionaryIblockInstaller
   protected function getElements(): array
   {
     return [
-      ['CODE' => 'S', 'NAME' => 'Southampton'],
-      ['CODE' => 'C', 'NAME' => 'Cherbourg'],
-      ['CODE' => 'Q', 'NAME' => 'Queenstown'],
-      ['CODE' => 'unknown', 'NAME' => 'Неизвестно'],
+      ['CODE' => 'S', 'NAME' => (string)Loc::getMessage('TITANIC_PORTS_IBLOCK_INSTALLER_ELEMENT_S_NAME')],
+      ['CODE' => 'C', 'NAME' => (string)Loc::getMessage('TITANIC_PORTS_IBLOCK_INSTALLER_ELEMENT_C_NAME')],
+      ['CODE' => 'Q', 'NAME' => (string)Loc::getMessage('TITANIC_PORTS_IBLOCK_INSTALLER_ELEMENT_Q_NAME')],
+      ['CODE' => 'unknown', 'NAME' => (string)Loc::getMessage('TITANIC_PORTS_IBLOCK_INSTALLER_ELEMENT_UNKNOWN_NAME')],
     ];
   }
 }

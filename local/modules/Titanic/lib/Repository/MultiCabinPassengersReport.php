@@ -10,6 +10,8 @@ namespace Models\Titanic\Repository;
 final class MultiCabinPassengersReport extends PassengersRepository
 {
 	/**
+	 * Возвращает пассажиров, у которых найдено больше одной каюты.
+	 *
 	 * @param array<string, mixed> $filter
 	 * @return array<int, array<string, mixed>>
 	 */

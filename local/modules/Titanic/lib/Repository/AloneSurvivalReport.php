@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Models\Titanic\Repository;
 
 /**
- * Готовит отчет выживаемости по признаку одиночка или не одиночка.
+ * Готовит отчет выживаемости по признаку "один / не один".
  */
 final class AloneSurvivalReport extends PassengersRepository
 {
@@ -59,7 +59,10 @@ final class AloneSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Определяет, был ли пассажир одиночкой.
+	 *
 	 * @param array<string, mixed> $item
+	 * @return int
 	 */
 	private function isAlone(array $item): int
 	{
@@ -69,6 +72,13 @@ final class AloneSurvivalReport extends PassengersRepository
 		return ($sibsp + $parch) === 0 ? 1 : 0;
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {

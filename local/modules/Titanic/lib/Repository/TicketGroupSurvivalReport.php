@@ -21,6 +21,8 @@ final class TicketGroupSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает выживаемость по размеру группы билета.
+	 *
 	 * @param array<string, mixed> $filter
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -191,6 +193,13 @@ final class TicketGroupSurvivalReport extends PassengersRepository
 		];
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {

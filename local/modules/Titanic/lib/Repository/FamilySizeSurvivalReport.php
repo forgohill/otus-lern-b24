@@ -21,6 +21,9 @@ final class FamilySizeSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает выживаемость по размеру семьи.
+	 *
+	 * @param array<string, mixed> $filter
 	 * @return list<array{
 	 *   family_size: int,
 	 *   family_label: string,
@@ -64,6 +67,12 @@ final class FamilySizeSurvivalReport extends PassengersRepository
 		return $rows;
 	}
 
+	/**
+	 * Преобразует размер семьи в аналитическую группу.
+	 *
+	 * @param int $familySize
+	 * @return int
+	 */
 	private function resolveBucket(int $familySize): int
 	{
 		if ($familySize <= 1) {
@@ -85,6 +94,13 @@ final class FamilySizeSurvivalReport extends PassengersRepository
 		return 5;
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {

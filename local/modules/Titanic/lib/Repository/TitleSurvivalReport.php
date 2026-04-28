@@ -21,6 +21,9 @@ final class TitleSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает выживаемость по титулу пассажира.
+	 *
+	 * @param array<string, mixed> $filter
 	 * @return list<array{
 	 *   title: string,
 	 *   total: int,
@@ -70,6 +73,12 @@ final class TitleSurvivalReport extends PassengersRepository
 		return $rows;
 	}
 
+	/**
+	 * Извлекает титул из полного имени пассажира.
+	 *
+	 * @param string $fullName
+	 * @return string
+	 */
 	private function extractTitle(string $fullName): string
 	{
 		if (preg_match('/,\s*([A-Za-z]+)\./u', $fullName, $matches) !== 1) {
@@ -79,6 +88,13 @@ final class TitleSurvivalReport extends PassengersRepository
 		return $matches[1];
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {
@@ -91,6 +107,7 @@ final class TitleSurvivalReport extends PassengersRepository
 	/**
 	 * @param array{title: string} $left
 	 * @param array{title: string} $right
+	 * @return int
 	 */
 	private function compareRows(array $left, array $right): int
 	{
@@ -104,6 +121,12 @@ final class TitleSurvivalReport extends PassengersRepository
 		return $leftOrder <=> $rightOrder;
 	}
 
+	/**
+	 * Возвращает порядок сортировки титула.
+	 *
+	 * @param string $title
+	 * @return int
+	 */
 	private function resolveOrder(string $title): int
 	{
 		return [

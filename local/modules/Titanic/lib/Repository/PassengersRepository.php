@@ -9,11 +9,15 @@ use Models\Titanic\Orm\PassengersTable;
 
 /**
  * Возвращает полную коллекцию пассажиров через Bitrix ORM.
+ *
+ * Базовый репозиторий для аналитических отчетов и выборок.
  */
 class PassengersRepository
 {
 	/**
-	 * Хук для дочерних репозиториев и отчетов.
+	 * Дает дочерним репозиториям точку для расширения фильтра источника.
+	 *
+	 * В базовой реализации фильтр возвращается без изменений.
 	 *
 	 * @param array<string, mixed> $filter
 	 * @return array<string, mixed>
@@ -24,6 +28,8 @@ class PassengersRepository
 	}
 
 	/**
+	 * Получает коллекцию пассажиров с заранее выбранными связями.
+	 *
 	 * @param array<string, mixed> $filter
 	 * @return Collection
 	 */
@@ -65,7 +71,7 @@ class PassengersRepository
 	}
 
 	/**
-	 * Возвращает всю ORM-коллекцию пассажиров с внешним фильтром.
+	 * Возвращает ORM-коллекцию пассажиров с внешним фильтром.
 	 *
 	 * @param array<string, mixed> $filter
 	 * @return Collection
@@ -76,10 +82,10 @@ class PassengersRepository
 	}
 
 	/**
-	 * Возвращает массив пассажиров из коллекции с вложенными связанными объектами.
+	 * Преобразует коллекцию пассажиров в массив с вложенными связанными объектами.
 	 *
 	 * @param array<string, mixed> $filter
-	 * @return array<int, array<string, mixed>>
+	 * @return list<array<string, mixed>>
 	 */
 	public function getItems(array $filter = []): array
 	{

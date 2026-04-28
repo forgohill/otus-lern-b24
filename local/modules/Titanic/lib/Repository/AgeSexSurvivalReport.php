@@ -71,6 +71,12 @@ final class AgeSexSurvivalReport extends PassengersRepository
 		return $rows;
 	}
 
+	/**
+	 * Преобразует возраст в аналитическую группу.
+	 *
+	 * @param mixed $age
+	 * @return string
+	 */
 	private function resolveAgeGroup(mixed $age): string
 	{
 		if ($age === null || $age === '') {
@@ -110,6 +116,12 @@ final class AgeSexSurvivalReport extends PassengersRepository
 		return '60+';
 	}
 
+	/**
+	 * Нормализует значение пола.
+	 *
+	 * @param string $sex
+	 * @return string
+	 */
 	private function resolveSex(string $sex): string
 	{
 		$sex = trim($sex);
@@ -121,6 +133,13 @@ final class AgeSexSurvivalReport extends PassengersRepository
 		return $sex;
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {
@@ -133,6 +152,7 @@ final class AgeSexSurvivalReport extends PassengersRepository
 	/**
 	 * @param array{age_group: string, sex: string} $left
 	 * @param array{age_group: string, sex: string} $right
+	 * @return int
 	 */
 	private function compareRows(array $left, array $right): int
 	{
@@ -149,6 +169,12 @@ final class AgeSexSurvivalReport extends PassengersRepository
 		return $leftAgeOrder <=> $rightAgeOrder;
 	}
 
+	/**
+	 * Возвращает порядок сортировки возрастной группы.
+	 *
+	 * @param string $ageGroup
+	 * @return int
+	 */
 	private function resolveAgeOrder(string $ageGroup): int
 	{
 		return [
@@ -163,6 +189,12 @@ final class AgeSexSurvivalReport extends PassengersRepository
 		][$ageGroup] ?? 99;
 	}
 
+	/**
+	 * Возвращает порядок сортировки пола.
+	 *
+	 * @param string $sex
+	 * @return int
+	 */
 	private function resolveSexOrder(string $sex): int
 	{
 		return [

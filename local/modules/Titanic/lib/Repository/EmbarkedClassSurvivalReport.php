@@ -33,6 +33,8 @@ final class EmbarkedClassSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает выживаемость по порту посадки и классу.
+	 *
 	 * @param array<string, mixed> $filter
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -84,6 +86,12 @@ final class EmbarkedClassSurvivalReport extends PassengersRepository
 		return $rows;
 	}
 
+	/**
+	 * Нормализует код порта посадки.
+	 *
+	 * @param string $portCode
+	 * @return string
+	 */
 	private function normalizePortCode(string $portCode): string
 	{
 		$portCode = trim($portCode);
@@ -91,11 +99,24 @@ final class EmbarkedClassSurvivalReport extends PassengersRepository
 		return $portCode !== '' ? $portCode : 'unknown';
 	}
 
+	/**
+	 * Преобразует код класса в числовой порядок.
+	 *
+	 * @param string $classCode
+	 * @return int
+	 */
 	private function resolveClassNumber(string $classCode): int
 	{
 		return self::CLASS_CODE_TO_NUMBER[$classCode] ?? 0;
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {
@@ -108,6 +129,7 @@ final class EmbarkedClassSurvivalReport extends PassengersRepository
 	/**
 	 * @param array{PORT: string, PCLASS: int} $left
 	 * @param array{PORT: string, PCLASS: int} $right
+	 * @return int
 	 */
 	private function compareRows(array $left, array $right): int
 	{

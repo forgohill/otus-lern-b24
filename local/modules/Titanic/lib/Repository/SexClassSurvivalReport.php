@@ -32,6 +32,9 @@ final class SexClassSurvivalReport extends PassengersRepository
  }
 
  /**
+  * Возвращает выживаемость по полу и классу пассажира.
+  *
+  * @param array<string, mixed> $filter
   * @return list<array{
   *   sex: string,
   *   pclass: int,
@@ -85,11 +88,24 @@ final class SexClassSurvivalReport extends PassengersRepository
   return $rows;
  }
 
+ /**
+  * Преобразует код класса в числовой порядок.
+  *
+  * @param string $classCode
+  * @return int
+  */
  private function resolveClassNumber(string $classCode): int
  {
   return self::CLASS_CODE_TO_NUMBER[$classCode] ?? 0;
  }
 
+ /**
+  * Считает процент выживаемости.
+  *
+  * @param int $survived
+  * @param int $total
+  * @return float
+  */
  private function calculateSurvivalRate(int $survived, int $total): float
  {
   if ($total === 0) {
@@ -102,6 +118,7 @@ final class SexClassSurvivalReport extends PassengersRepository
  /**
   * @param array{sex: string, pclass: int} $left
   * @param array{sex: string, pclass: int} $right
+  * @return int
   */
  private function compareRows(array $left, array $right): int
  {

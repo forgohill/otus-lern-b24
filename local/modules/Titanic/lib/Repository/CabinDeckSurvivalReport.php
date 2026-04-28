@@ -21,6 +21,9 @@ final class CabinDeckSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает выживаемость по палубам.
+	 *
+	 * @param array<string, mixed> $filter
 	 * @return list<array{
 	 *   deck: string,
 	 *   label: string,
@@ -72,6 +75,9 @@ final class CabinDeckSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает выживаемость по факту наличия каюты.
+	 *
+	 * @param array<string, mixed> $filter
 	 * @return list<array{
 	 *   bucket: string,
 	 *   total: int,
@@ -111,7 +117,10 @@ final class CabinDeckSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Определяет палубу по связанным каютам пассажира.
+	 *
 	 * @param array<string, mixed> $item
+	 * @return string
 	 */
 	private function resolveDeckCode(array $item): string
 	{
@@ -137,7 +146,10 @@ final class CabinDeckSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Определяет категорию наличия каюты.
+	 *
 	 * @param array<string, mixed> $item
+	 * @return string
 	 */
 	private function resolveCabinPresenceBucket(array $item): string
 	{
@@ -146,6 +158,13 @@ final class CabinDeckSurvivalReport extends PassengersRepository
 		return is_array($cabins) && $cabins !== [] ? 'known' : 'empty';
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {

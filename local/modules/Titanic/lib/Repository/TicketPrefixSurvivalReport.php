@@ -21,6 +21,8 @@ final class TicketPrefixSurvivalReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает выживаемость по префиксу билета.
+	 *
 	 * @param array<string, mixed> $filter
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -66,6 +68,12 @@ final class TicketPrefixSurvivalReport extends PassengersRepository
 		return $rows;
 	}
 
+	/**
+	 * Нормализует префикс билета.
+	 *
+	 * @param string $prefix
+	 * @return string
+	 */
 	private function normalizePrefix(string $prefix): string
 	{
 		$prefix = trim($prefix);
@@ -73,6 +81,13 @@ final class TicketPrefixSurvivalReport extends PassengersRepository
 		return $prefix !== '' ? $prefix : 'без префикса';
 	}
 
+	/**
+	 * Считает процент выживаемости.
+	 *
+	 * @param int $survived
+	 * @param int $total
+	 * @return float
+	 */
 	private function calculateSurvivalRate(int $survived, int $total): float
 	{
 		if ($total === 0) {

@@ -71,6 +71,8 @@ final class FareAnalyticsReport extends PassengersRepository
 	}
 
 	/**
+	 * Возвращает строки с аналитикой по стоимости билетов.
+	 *
 	 * @param array<string, mixed> $filter
 	 * @return array<int, array<string, mixed>>
 	 */
@@ -103,6 +105,8 @@ final class FareAnalyticsReport extends PassengersRepository
 	}
 
 	/**
+	 * Подсчитывает размер каждой группы по Ticket.
+	 *
 	 * @param array<int, array<string, mixed>> $items
 	 * @return array<string, int>
 	 */
@@ -124,6 +128,13 @@ final class FareAnalyticsReport extends PassengersRepository
 		return $ticketGroupSizes;
 	}
 
+	/**
+	 * Считает стоимость билета на одного пассажира.
+	 *
+	 * @param float $fare
+	 * @param int $ticketGroupSize
+	 * @return float
+	 */
 	private function calculateFarePerPassenger(float $fare, int $ticketGroupSize): float
 	{
 		if ($ticketGroupSize <= 0) {

@@ -9,6 +9,8 @@ use Models\Titanic\Orm\PassengersTable;
 
 /**
  * Возвращает одного пассажира по внешнему идентификатору из CSV.
+ *
+ * Удобен как вспомогательный репозиторий для точечной выборки одного объекта.
  */
 final class PassengerByExternalIdRepository
 {

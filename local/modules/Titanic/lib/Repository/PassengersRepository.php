@@ -65,6 +65,17 @@ class PassengersRepository
 	}
 
 	/**
+	 * Возвращает всю ORM-коллекцию пассажиров с внешним фильтром.
+	 *
+	 * @param array<string, mixed> $filter
+	 * @return Collection
+	 */
+	public function getFilteredCollection(array $filter = []): Collection
+	{
+		return $this->getCollection($filter);
+	}
+
+	/**
 	 * Возвращает массив пассажиров из коллекции с вложенными связанными объектами.
 	 *
 	 * @param array<string, mixed> $filter
@@ -113,6 +124,7 @@ class PassengersRepository
 				'CABIN_DECK_ELEMENT_ID' => $passengerItem->getCabinDeckElementId(),
 				'CABIN_DECK_NAME' => $passengerItem->getCabinDeckElement()?->getName(),
 				'CABIN_DECK_CODE' => $passengerItem->getCabinDeckElement()?->getCode(),
+				'CABIN_RAW' => $passengerItem->getCabinRaw(),
 				'CABINS' => $cabins,
 			];
 		}

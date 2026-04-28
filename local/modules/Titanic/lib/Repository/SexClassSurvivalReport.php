@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace Models\Titanic\Repository;
 
-use Bitrix\Main\ORM\Fields\ExpressionField;
-use Models\Titanic\Orm\PassengersTable;
-
 /**
  * Готовит агрегированный отчёт выживаемости по полу и классу пассажира.
  */
-final class SexClassSurvivalReport
+final class SexClassSurvivalReport extends PassengersRepository
 {
  private const CLASS_CODE_TO_NUMBER = [
   'first' => 1,
@@ -24,6 +21,17 @@ final class SexClassSurvivalReport
  ];
 
  /**
+  * Дает дочернему классу точку для расширения фильтра источника.
+  *
+  * @param array<string, mixed> $filter
+  * @return array<string, mixed>
+  */
+ protected function getSourceFilter(array $filter = []): array
+ {
+  return $filter;
+ }
+
+ /**
   * @return list<array{
   *   sex: string,
   *   pclass: int,
@@ -33,42 +41,39 @@ final class SexClassSurvivalReport
   *   survival_rate: float
   * }>
   */
- public function getRows(): array
+ public function getRows(array $filter = []): array
  {
-  $result = PassengersTable::getList([
-   'select' => [
-    'SEX',
-    'PCLASS_ELEMENT_ID',
-    'PCLASS_CODE' => 'PCLASS_ELEMENT.CODE',
-    'TOTAL',
-    'SURVIVED_TOTAL',
-   ],
-   'runtime' => [
-    new ExpressionField('TOTAL', 'COUNT(%s)', ['ID']),
-    new ExpressionField('SURVIVED_TOTAL', 'SUM(%s)', ['SURVIVED']),
-   ],
-   'group' => [
-    'SEX',
-    'PCLASS_ELEMENT_ID',
-    'PCLASS_ELEMENT.CODE',
-   ],
-   'order' => [
-    'SEX' => 'ASC',
-    'PCLASS_ELEMENT_ID' => 'ASC',
-   ],
-  ]);
+  $groups = [];
+
+  foreach ($this->getItems($this->getSourceFilter($filter)) as $item) {
+   $sex = (string)($item['SEX'] ?? '');
+   $pclassCode = (string)($item['PCLASS_CODE'] ?? '');
+   $bucketKey = $sex . '|' . $pclassCode;
+
+   if (!isset($groups[$bucketKey])) {
+    $groups[$bucketKey] = [
+     'sex' => $sex,
+     'pclass' => $this->resolveClassNumber($pclassCode),
+     'pclass_code' => $pclassCode,
+     'total' => 0,
+     'survived' => 0,
+    ];
+   }
+
+   $groups[$bucketKey]['total']++;
+   $groups[$bucketKey]['survived'] += (int)($item['SURVIVED'] ?? 0);
+  }
 
   $rows = [];
 
-  while ($row = $result->fetch()) {
-   $total = (int)$row['TOTAL'];
-   $survived = (int)$row['SURVIVED_TOTAL'];
-   $pclassCode = (string)$row['PCLASS_CODE'];
+  foreach ($groups as $group) {
+   $total = (int)$group['total'];
+   $survived = (int)$group['survived'];
 
    $rows[] = [
-    'sex' => (string)$row['SEX'],
-    'pclass' => $this->resolveClassNumber($pclassCode),
-    'pclass_code' => $pclassCode,
+    'sex' => (string)$group['sex'],
+    'pclass' => (int)$group['pclass'],
+    'pclass_code' => (string)$group['pclass_code'],
     'total' => $total,
     'survived' => $survived,
     'survival_rate' => $this->calculateSurvivalRate($survived, $total),

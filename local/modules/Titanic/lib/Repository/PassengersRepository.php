@@ -10,14 +10,27 @@ use Models\Titanic\Orm\PassengersTable;
 /**
  * Возвращает полную коллекцию пассажиров через Bitrix ORM.
  */
-final class PassengersRepository
+class PassengersRepository
 {
+	/**
+	 * Хук для дочерних репозиториев и отчетов.
+	 *
+	 * @param array<string, mixed> $filter
+	 * @return array<string, mixed>
+	 */
+	protected function getCollectionFilter(array $filter = []): array
+	{
+		return $filter;
+	}
+
 	/**
 	 * @param array<string, mixed> $filter
 	 * @return Collection
 	 */
 	public function getCollection(array $filter = []): Collection
 	{
+		$filter = $this->getCollectionFilter($filter);
+
 		$collection = PassengersTable::getList([
 			'filter' => $filter,
 			'select' => [

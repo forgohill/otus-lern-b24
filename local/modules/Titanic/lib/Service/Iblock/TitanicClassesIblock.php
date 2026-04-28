@@ -16,11 +16,15 @@ use Models\Titanic\Config\TitanicConfig;
  * Этот класс не является ORM-сущностью.
  * Он нужен, чтобы получить class-string ORM-сущности инфоблока
  * и потом использовать его в `Reference`.
+ *
+ * @internal Вспомогательный класс для получения ID и ORM-сущности инфоблока.
  */
 final class TitanicClassesIblock
 {
     /**
      * Код инфоблока в системе.
+     *
+     * @return non-empty-string
      */
     public static function getCode(): string
     {
@@ -29,6 +33,8 @@ final class TitanicClassesIblock
 
     /**
      * API_CODE инфоблока.
+     *
+     * @return non-empty-string
      */
     public static function getApiCode(): string
     {
@@ -37,6 +43,8 @@ final class TitanicClassesIblock
 
     /**
      * Название опции, где хранится ID инфоблока.
+     *
+     * @return non-empty-string
      */
     public static function getOptionName(): string
     {
@@ -45,6 +53,8 @@ final class TitanicClassesIblock
 
     /**
      * Возвращает ID инфоблока из опции модуля.
+     *
+     * @return int|null
      */
     public static function getIblockId(): ?int
     {
@@ -59,6 +69,8 @@ final class TitanicClassesIblock
      * Этот результат можно использовать как цель для ORM Reference.
      *
      * @return class-string
+     *
+     * @throws SystemException Если модуль `iblock` не подключён или инфоблок не найден.
      */
     public static function getEntityDataClass(): string
     {
@@ -74,12 +86,19 @@ final class TitanicClassesIblock
 
     /**
      * Проверяет, что инфоблок уже зарегистрирован в модуле.
+     *
+     * @return bool
      */
     public static function isInstalled(): bool
     {
         return self::getIblockId() !== null;
     }
 
+    /**
+     * Подключает модуль `iblock` перед обращением к API инфоблоков.
+     *
+     * @throws SystemException Если модуль не удалось подключить.
+     */
     private static function loadIblockModule(): void
     {
         if (!Loader::includeModule('iblock')) {

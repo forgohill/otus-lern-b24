@@ -41,6 +41,11 @@ final class TitanicCsvParser
 
     private string $escape;
 
+    /**
+     * @param string $delimiter
+     * @param string $enclosure
+     * @param string $escape
+     */
     public function __construct(string $delimiter = ',', string $enclosure = '"', string $escape = '\\')
     {
         $this->delimiter = $delimiter;
@@ -138,6 +143,7 @@ final class TitanicCsvParser
      *
      * @param list<string> $headers
      * @param list<string|null> $data
+     * @param string $filePath
      *
      * @return array{
      *   passenger_id: int,
@@ -185,6 +191,12 @@ final class TitanicCsvParser
         ];
     }
 
+    /**
+     * Нормализует заголовок CSV в ключ массива.
+     *
+     * @param string $header
+     * @return string
+     */
     private function normalizeHeader(string $header): string
     {
         $header = trim($header);
@@ -200,6 +212,12 @@ final class TitanicCsvParser
         return $header;
     }
 
+    /**
+     * Проверяет, пуста ли строка CSV.
+     *
+     * @param array<int, string|null> $data
+     * @return bool
+     */
     private function isEmptyRow(array $data): bool
     {
         foreach ($data as $value) {
@@ -211,6 +229,12 @@ final class TitanicCsvParser
         return true;
     }
 
+    /**
+     * Проверяет, пусто ли значение.
+     *
+     * @param mixed $value
+     * @return bool
+     */
     private function isEmptyValue(mixed $value): bool
     {
         return $value === null || trim((string)$value) === '';
@@ -252,6 +276,9 @@ final class TitanicCsvParser
 
     /**
      * Приводит значение к числу с плавающей точкой или null.
+     *
+     * @param mixed $value
+     * @return float|null
      */
     private function toNullableFloat(mixed $value): ?float
     {

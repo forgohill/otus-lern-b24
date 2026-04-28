@@ -11,29 +11,51 @@ use Bitrix\Main\SystemException;
 use Models\Titanic\Config\TitanicConfig;
 
 /**
- * Service for working with the `titanic_ports` iblock.
+ * Сервис для работы с инфоблоком `titanic_ports`.
  *
- * This class is not an ORM entity itself.
- * It resolves the ORM entity class of the iblock,
- * so it can be used later in `Reference`.
+ * Сам класс не является ORM-сущностью.
+ * Он получает класс ORM-сущности инфоблока,
+ * чтобы потом его можно было использовать в `Reference`.
+ *
+ * @internal Вспомогательный класс для получения ID и ORM-сущности инфоблока.
  */
 final class TitanicPortsIblock
 {
+    /**
+     * Возвращает код инфоблока в системе.
+     *
+     * @return non-empty-string
+     */
     public static function getCode(): string
     {
         return TitanicConfig::PORTS_IBLOCK_CODE;
     }
 
+    /**
+     * Возвращает API-код инфоблока.
+     *
+     * @return non-empty-string
+     */
     public static function getApiCode(): string
     {
         return TitanicConfig::PORTS_IBLOCK_API_CODE;
     }
 
+    /**
+     * Возвращает имя опции модуля, в которой хранится ID инфоблока.
+     *
+     * @return non-empty-string
+     */
     public static function getOptionName(): string
     {
         return TitanicConfig::PORTS_IBLOCK_OPTION;
     }
 
+    /**
+     * Возвращает сохранённый ID инфоблока или `null`, если инфоблок не установлен.
+     *
+     * @return int|null
+     */
     public static function getIblockId(): ?int
     {
         $iblockId = (int)Option::get(TitanicConfig::MODULE_ID, self::getOptionName(), '0');
@@ -42,9 +64,11 @@ final class TitanicPortsIblock
     }
 
     /**
-     * Returns the ORM entity class-string of the iblock.
+     * Возвращает class-string ORM-сущности инфоблока.
      *
      * @return class-string
+     *
+     * @throws SystemException Если модуль `iblock` не подключён или инфоблок не найден.
      */
     public static function getEntityDataClass(): string
     {
@@ -58,11 +82,21 @@ final class TitanicPortsIblock
         return Iblock::wakeUp($iblockId)->getEntityDataClass();
     }
 
+    /**
+     * Проверяет, установлен ли инфоблок.
+     *
+     * @return bool
+     */
     public static function isInstalled(): bool
     {
         return self::getIblockId() !== null;
     }
 
+    /**
+     * Подключает модуль `iblock` перед обращением к API инфоблоков.
+     *
+     * @throws SystemException Если модуль не удалось подключить.
+     */
     private static function loadIblockModule(): void
     {
         if (!Loader::includeModule('iblock')) {

@@ -33,6 +33,11 @@ final class TitanicPassengersImporter
 
     private TitanicTicketsImporter $ticketsImporter;
 
+    /**
+     * @param TitanicCsvParser|null $parser
+     * @param TitanicCabinParser|null $cabinParser
+     * @param TitanicTicketsImporter|null $ticketsImporter
+     */
     public function __construct(
         ?TitanicCsvParser $parser = null,
         ?TitanicCabinParser $cabinParser = null,
@@ -201,6 +206,40 @@ final class TitanicPassengersImporter
      *   CABIN_CODES: list<string>
      * }>
      */
+    /**
+     * Собирает уникальных пассажиров из строк CSV.
+     *
+     * @param list<array{
+     *   passenger_id: int,
+     *   survived: int,
+     *   pclass: int,
+     *   name: string,
+     *   sex: string,
+     *   age: float|null,
+     *   sibsp: int,
+     *   parch: int,
+     *   ticket: string,
+     *   fare: float,
+     *   cabin: string|null,
+     *   embarked: string|null
+     * }> $rows
+     *
+     * @return list<array{
+     *   PASSENGER_EXTERNAL_ID: int,
+     *   FULL_NAME: string,
+     *   SEX: string,
+     *   AGE: float|null,
+     *   SIBSP: int,
+     *   PARCH: int,
+     *   FARE: float,
+     *   SURVIVED: int,
+     *   TICKET_KEY: string,
+     *   PCLASS_VALUE: int,
+     *   EMBARKED_CODE: string|null,
+     *   CABIN_RAW: string|null,
+     *   CABIN_CODES: list<string>
+     * }>
+     */
     private function collectUniquePassengersFromRows(array $rows): array
     {
         $passengers = [];
@@ -230,6 +269,12 @@ final class TitanicPassengersImporter
         return array_values($passengers);
     }
 
+    /**
+     * Нормализует код порта посадки.
+     *
+     * @param mixed $embarkedCode
+     * @return string|null
+     */
     private function normalizeEmbarkedCode(mixed $embarkedCode): ?string
     {
         $embarkedCode = trim((string)$embarkedCode);
@@ -241,6 +286,12 @@ final class TitanicPassengersImporter
         return strtoupper($embarkedCode);
     }
 
+    /**
+     * Нормализует необязательное строковое значение.
+     *
+     * @param mixed $value
+     * @return string|null
+     */
     private function normalizeOptionalString(mixed $value): ?string
     {
         $value = trim((string)$value);
@@ -248,6 +299,13 @@ final class TitanicPassengersImporter
         return $value === '' ? null : $value;
     }
 
+    /**
+     * Собирает нормализованный ключ билета.
+     *
+     * @param string $prefix
+     * @param string $number
+     * @return string
+     */
     private function buildTicketKey(string $prefix, string $number): string
     {
         return strtoupper($prefix . '|' . $number);
@@ -292,6 +350,8 @@ final class TitanicPassengersImporter
     }
 
     /**
+     * Возвращает карту ID элементов инфоблока портов посадки.
+     *
      * @return array<string, int>
      */
     private function loadPortMap(): array
@@ -309,6 +369,11 @@ final class TitanicPassengersImporter
         return $map;
     }
 
+    /**
+     * Возвращает ID палубы `unknown`.
+     *
+     * @return int
+     */
     private function loadUnknownDeckElementId(): int
     {
         $entityClass = TitanicCabinDecksIblock::getEntityDataClass();
@@ -422,7 +487,10 @@ final class TitanicPassengersImporter
     }
 
     /**
+     * Возвращает ID билета по нормализованному ключу.
+     *
      * @param array<string, int> $ticketMap
+     * @return int
      */
     private function resolveTicketId(string $ticketKey, array $ticketMap): int
     {
@@ -434,7 +502,10 @@ final class TitanicPassengersImporter
     }
 
     /**
+     * Возвращает ID элемента инфоблока для класса пассажира.
+     *
      * @param array<string, int> $classMap
+     * @return int
      */
     private function resolveClassElementId(int $pclass, array $classMap): int
     {
@@ -453,7 +524,10 @@ final class TitanicPassengersImporter
     }
 
     /**
+     * Возвращает ID элемента инфоблока для порта посадки.
+     *
      * @param array<string, int> $portMap
+     * @return int|null
      */
     private function resolvePortElementId(?string $embarkedCode, array $portMap): ?int
     {
@@ -473,8 +547,12 @@ final class TitanicPassengersImporter
     }
 
     /**
+     * Возвращает ID палубы по списку кают.
+     *
      * @param list<string> $cabinCodes
      * @param array<string, array{ID: int, DECK_ELEMENT_ID: int}> $cabinMap
+     * @param int $unknownDeckElementId
+     * @return int
      */
     private function resolveCabinDeckElementId(array $cabinCodes, array $cabinMap, int $unknownDeckElementId): int
     {
@@ -495,8 +573,12 @@ final class TitanicPassengersImporter
     }
 
     /**
-     * @param array<string, array{ID: int, DECK_ELEMENT_ID: int}> $cabinMap
+     * Связывает пассажира со всеми найденными каютами.
+     *
+     * @param int $passengerId
      * @param list<string> $cabinCodes
+     * @param array<string, array{ID: int, DECK_ELEMENT_ID: int}> $cabinMap
+     * @return void
      */
     private function linkPassengerCabins(int $passengerId, array $cabinCodes, array $cabinMap): void
     {
@@ -519,6 +601,9 @@ final class TitanicPassengersImporter
     }
 
     /**
+     * Извлекает сообщения ошибок из результата ORM-операции.
+     *
+     * @param mixed $result
      * @return list<string>
      */
     private function extractErrors(mixed $result): array
@@ -530,6 +615,12 @@ final class TitanicPassengersImporter
         return ['Не удалось добавить пассажира в таблицу.'];
     }
 
+    /**
+     * Откатывает транзакцию и скрывает возможную ошибку отката.
+     *
+     * @param Connection $connection
+     * @return void
+     */
     private function rollbackTransaction(Connection $connection): void
     {
         try {

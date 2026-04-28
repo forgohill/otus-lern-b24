@@ -15,6 +15,9 @@ final class TitanicTicketsImporter
 {
     private TitanicCsvParser $parser;
 
+    /**
+     * @param TitanicCsvParser|null $parser
+     */
     public function __construct(?TitanicCsvParser $parser = null)
     {
         $this->parser = $parser ?? new TitanicCsvParser();
@@ -162,6 +165,7 @@ final class TitanicTicketsImporter
      * - 347082 -> prefix NUMERIC, number 347082
      * - STON/O2. 3101282 -> prefix STONO2, number 3101282
      *
+     * @param string $ticketRaw
      * @return array{prefix: string, number: string}
      */
     public function normalizeTicket(string $ticketRaw): array
@@ -200,11 +204,25 @@ final class TitanicTicketsImporter
         ];
     }
 
+    /**
+     * Собирает ключ билета из prefix и number.
+     *
+     * @param string $prefix
+     * @param string $number
+     * @return string
+     */
     private function buildTicketKey(string $prefix, string $number): string
     {
         return strtoupper($prefix . '|' . $number);
     }
 
+    /**
+     * Проверяет, существует ли билет в таблице.
+     *
+     * @param string $prefix
+     * @param string $number
+     * @return bool
+     */
     private function ticketExists(string $prefix, string $number): bool
     {
         $row = TicketsTable::getList([
@@ -220,6 +238,9 @@ final class TitanicTicketsImporter
     }
 
     /**
+     * Извлекает сообщения об ошибках из результата ORM-операции.
+     *
+     * @param mixed $result
      * @return list<string>
      */
     private function extractErrors(mixed $result): array
@@ -231,6 +252,12 @@ final class TitanicTicketsImporter
         return ['Не удалось добавить билет в таблицу.'];
     }
 
+    /**
+     * Откатывает транзакцию и скрывает возможную ошибку отката.
+     *
+     * @param \Bitrix\Main\DB\Connection $connection
+     * @return void
+     */
     private function rollbackTransaction(\Bitrix\Main\DB\Connection $connection): void
     {
         try {

@@ -12,6 +12,9 @@ final class TitanicCabinParser
     private const KNOWN_DECK_CODES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'T'];
 
     /**
+     * Преобразует сырое значение Cabin в список кают и палуб.
+     *
+     * @param string $cabinRaw
      * @return list<array{
      *   CABIN_CODE: string,
      *   DECK_CODE: string
@@ -44,6 +47,9 @@ final class TitanicCabinParser
     }
 
     /**
+     * Возвращает только коды кают из значения Cabin.
+     *
+     * @param string $cabinRaw
      * @return list<string>
      */
     public function getCabinCodes(string $cabinRaw): array
@@ -52,6 +58,9 @@ final class TitanicCabinParser
     }
 
     /**
+     * Разбивает сырое значение Cabin на отдельные токены.
+     *
+     * @param string $cabinRaw
      * @return list<string>
      */
     private function tokenize(string $cabinRaw): array
@@ -79,6 +88,12 @@ final class TitanicCabinParser
         return $normalized;
     }
 
+    /**
+     * Нормализует один токен каюты.
+     *
+     * @param string $token
+     * @return string
+     */
     private function normalizeCabinToken(string $token): string
     {
         $token = strtoupper(trim($token));
@@ -91,6 +106,7 @@ final class TitanicCabinParser
      * Формат вроде `F G73` означает палубу F и каюту G73, а не две отдельные каюты.
      *
      * @param list<string> $tokens
+     * @return bool
      */
     private function isDeckAndCabinRecord(array $tokens): bool
     {
@@ -104,6 +120,12 @@ final class TitanicCabinParser
             && preg_match('/^[A-Z]\d+[A-Z]*$/', $cabinCode) === 1;
     }
 
+    /**
+     * Определяет палубу по коду каюты.
+     *
+     * @param string $cabinCode
+     * @return string
+     */
     private function detectDeckCode(string $cabinCode): string
     {
         $firstChar = strtoupper(substr($cabinCode, 0, 1));
@@ -115,6 +137,12 @@ final class TitanicCabinParser
         return 'unknown';
     }
 
+    /**
+     * Проверяет, известна ли палуба.
+     *
+     * @param string $deckCode
+     * @return bool
+     */
     private function isKnownDeckCode(string $deckCode): bool
     {
         return in_array($deckCode, self::KNOWN_DECK_CODES, true);

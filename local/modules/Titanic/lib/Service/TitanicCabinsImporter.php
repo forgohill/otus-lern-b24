@@ -18,6 +18,10 @@ final class TitanicCabinsImporter
 
     private TitanicCabinParser $cabinParser;
 
+    /**
+     * @param TitanicCsvParser|null $parser
+     * @param TitanicCabinParser|null $cabinParser
+     */
     public function __construct(?TitanicCsvParser $parser = null, ?TitanicCabinParser $cabinParser = null)
     {
         $this->parser = $parser ?? new TitanicCsvParser();
@@ -212,6 +216,12 @@ final class TitanicCabinsImporter
         return ['Не удалось добавить каюту в таблицу.'];
     }
 
+    /**
+     * Откатывает транзакцию импорта, если это возможно.
+     *
+     * @param \Bitrix\Main\DB\Connection $connection
+     * @return void
+     */
     private function rollbackTransaction(\Bitrix\Main\DB\Connection $connection): void
     {
         try {

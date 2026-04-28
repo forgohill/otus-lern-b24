@@ -7,8 +7,11 @@ namespace Models\Titanic\Service\Iblock;
 use Bitrix\Iblock\Iblock;
 use Bitrix\Main\Config\Option;
 use Bitrix\Main\Loader;
+use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\SystemException;
 use Models\Titanic\Config\TitanicConfig;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Сервис для работы с инфоблоком `titanic_ports`.
@@ -76,7 +79,12 @@ final class TitanicPortsIblock
 
         $iblockId = self::getIblockId();
         if ($iblockId === null) {
-            throw new SystemException('Iblock ' . self::getCode() . ' is not found.');
+            throw new SystemException(
+                (string)Loc::getMessage(
+                    'TITANIC_PORTS_IBLOCK_NOT_FOUND',
+                    ['#CODE#' => self::getCode()]
+                )
+            );
         }
 
         return Iblock::wakeUp($iblockId)->getEntityDataClass();
@@ -100,7 +108,7 @@ final class TitanicPortsIblock
     private static function loadIblockModule(): void
     {
         if (!Loader::includeModule('iblock')) {
-            throw new SystemException('Module iblock is not loaded.');
+            throw new SystemException((string)Loc::getMessage('TITANIC_PORTS_IBLOCK_MODULE_NOT_LOADED'));
         }
     }
 }

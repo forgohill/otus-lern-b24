@@ -138,6 +138,53 @@ body {
   margin-top: 18px;
 }
 
+.homework-description {
+  max-width: 1120px;
+  color: #1f2d3d;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.homework-description p {
+  margin: 0 0 14px;
+}
+
+.homework-description p:last-child {
+  margin-bottom: 0;
+}
+
+.homework-description code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: #f4f6f8;
+  color: #1f2d3d;
+  font-size: 0.92em;
+}
+
+.homework-description-more {
+  margin-top: 6px;
+}
+
+.homework-description-more summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  color: #2f7cf6;
+  cursor: pointer;
+}
+
+.homework-description-more summary:hover {
+  color: #2568cf;
+}
+
+.homework-description-more summary::marker {
+  color: #2f7cf6;
+}
+
+.homework-description-more[open] summary {
+  margin-bottom: 12px;
+}
+
 .homework-status-list {
   display: grid;
   gap: 12px;

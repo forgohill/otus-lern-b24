@@ -68,6 +68,41 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
 
   <div class="homework-section">
     <div class="homework-section-body">
+      <div class="homework-description">
+        <p>
+          В проекте есть две основные части: код модуля в <code>local/modules/Titanic</code> и пользовательские страницы домашнего задания в <code>homeworks/homework4</code>. Модуль содержит бизнес-логику, ORM-классы, установщики, сервисы импорта и репозитории. Папка <code>homework4</code> даёт веб-интерфейс для установки, заполнения данных и просмотра аналитики.
+        </p>
+        <p>
+          Данные берутся из файла <code>titanic.csv</code>. В нём 891 пассажир Titanic плюс строка заголовков. CSV парсится сервисом <code>TitanicCsvParser</code>, после чего данные раскладываются не в одну плоскую таблицу, а в несколько связанных сущностей.
+        </p>
+        <p>
+          В проекте создаются три справочных инфоблока Bitrix в типе <code>lists</code>: классы пассажиров, порты посадки и палубы кают. Эти инфоблоки используются как справочники, а связь с ними выполняется через ID элементов инфоблоков. Для получения ORM-класса инфоблока используются сервисы <code>TitanicClassesIblock</code>, <code>TitanicPortsIblock</code> и <code>TitanicCabinDecksIblock</code>, которые вызывают <code>Iblock::wakeUp($id)->getEntityDataClass()</code>.
+        </p>
+
+        <details class="homework-description-more">
+          <summary>Читать описание полностью</summary>
+          <p>
+            Основные пользовательские таблицы описаны через D7 ORM <code>DataManager</code>: <code>TicketsTable</code>, <code>CabinsTable</code>, <code>PassengersTable</code> и <code>PassengerCabinTable</code>. Главная таблица проекта — <code>otus_titanic_passengers</code>. Она хранит пассажиров и связывает их с билетом, классом, портом посадки, палубой и каютами.
+          </p>
+          <p>
+            В проекте отрабатываются разные типы ORM-связей Bitrix. <code>Reference</code> используется для связей пассажира с билетом и элементами инфоблоков. <code>OneToMany</code> используется между билетом и пассажирами: один билет может относиться к нескольким пассажирам. <code>ManyToMany</code> используется между пассажирами и каютами через промежуточную таблицу <code>otus_titanic_passenger_cabin</code>.
+          </p>
+          <p>
+            Установка данных сделана пошагово через страницу <code>homeworks/homework4/install/index.php</code>. Сначала устанавливаются справочные инфоблоки, затем создаются ORM-таблицы, потом импортируются билеты, каюты и пассажиры. Импорт разбит на отдельные сервисы: <code>TitanicTicketsImporter</code>, <code>TitanicCabinsImporter</code>, <code>TitanicPassengersImporter</code>. Такой порядок нужен, потому что пассажиры ссылаются на уже созданные билеты, каюты и элементы инфоблоков.
+          </p>
+          <p>
+            После установки проект показывает стартовую страницу с 12 аналитическими карточками. Каждая карточка использует отдельный репозиторий отчёта: по полу и классу, размеру семьи, одиночным пассажирам, титулам в имени, возрастным группам, палубам, нескольким каютам, группам билетов, префиксам билетов, стоимости билетов и зависимости порта посадки от класса.
+          </p>
+          <p>
+            Отдельно есть страница полной таблицы пассажиров. Она использует <code>PassengersRepository</code>, который получает ORM-коллекцию пассажиров вместе со связанными сущностями: билетом, классом, портом, палубой и каютами. Это показывает практическую работу <code>fetchCollection()</code> и объектной модели D7 ORM.
+          </p>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div class="homework-section">
+    <div class="homework-section-body">
       <?php if (!$titanicReady): ?>
         <div class="homework-setup-banner">
           <div>

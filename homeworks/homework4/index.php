@@ -102,6 +102,12 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
           <a class="homework-topic-card" href="/homeworks/homework4/cards/selection9.php">
             «Префикс билета: скрытая подсказка о типе поездки»
           </a>
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection10.php">
+            «Цена спасения: Fare и реальная стоимость на человека»
+          </a>
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection11.php">
+            «Бесплатные билеты: пассажиры с Fare = 0»
+          </a>
         </div>
       <?php endif; ?>
     </div>

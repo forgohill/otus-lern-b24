@@ -96,6 +96,9 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
           <a class="homework-topic-card" href="/homeworks/homework4/cards/selection7.php">
             «Несколько кают у одного пассажира»
           </a>
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection8.php">
+            «Группы по Ticket: одиночные и групповые билеты»
+          </a>
         </div>
       <?php endif; ?>
     </div>

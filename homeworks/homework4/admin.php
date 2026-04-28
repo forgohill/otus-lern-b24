@@ -3,6 +3,7 @@
 use Bitrix\Main\Loader;
 use Bitrix\Main\Page\Asset;
 use Bitrix\Main\UI\Extension;
+use Models\Titanic\Repository\PassengerByExternalIdRepository;
 use Models\Titanic\Repository\PassengersRepository;
 use Models\Titanic\Service\TitanicCsvParser;
 
@@ -28,15 +29,24 @@ if ($showDump) {
     $parserRows = $parser->parse($csvPath);
 
     $passengersRepository = new PassengersRepository();
+    $passengerByExternalIdRepository = new PassengerByExternalIdRepository();
     $passengerFilter = [
-      '=SEX' => 'female',
-      '=SURVIVED' => 1,
+      // '=SEX' => 'female',
+      // '=SURVIVED' => 1,
+      '=PASSENGER_EXTERNAL_ID' => 28,
     ];
 
-    $collectionItems = $passengersRepository->getItems($passengerFilter);
+    $filteredCollection = $passengersRepository->getFilteredCollection($passengerFilter);
+    $firstPassenger = $passengerByExternalIdRepository->getByExternalId(28);
+    $firstPassengerCabins = $passengerByExternalIdRepository->getCabinsFromPassenger($firstPassenger);
 
     if (function_exists('dump')) {
-      dump($passengerFilter, $collectionItems);
+      dump(
+        $passengerFilter,
+        $filteredCollection,
+        $firstPassenger,
+        $firstPassengerCabins
+      );
     }
   } catch (\Throwable $exception) {
     $parserError = $exception->getMessage();

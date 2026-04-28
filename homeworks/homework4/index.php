@@ -108,6 +108,9 @@ $titanicReady = $allIblocksInstalled && $allTablesInstalled && $allTablesFilled;
           <a class="homework-topic-card" href="/homeworks/homework4/cards/selection11.php">
             «Бесплатные билеты: пассажиры с Fare = 0»
           </a>
+          <a class="homework-topic-card" href="/homeworks/homework4/cards/selection12.php">
+            «Порт посадки и класс: корреляция не равна причине»
+          </a>
         </div>
       <?php endif; ?>
     </div>

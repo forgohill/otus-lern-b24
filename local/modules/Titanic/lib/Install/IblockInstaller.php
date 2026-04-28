@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Models\Titanic\Install;
 
+use Bitrix\Main\Localization\Loc;
 use Models\Titanic\Config\TitanicConfig;
 use Models\Titanic\Install\Iblocks\TitanicCabinDecksIblockInstaller;
 use Models\Titanic\Install\Iblocks\TitanicClassesIblockInstaller;
 use Models\Titanic\Install\Iblocks\TitanicPortsIblockInstaller;
 use Bitrix\Main\Loader;
 use Bitrix\Main\SystemException;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Обработчик установки справочных инфоблоков проекта Titanic.
@@ -77,7 +80,7 @@ class IblockInstaller
   private function loadIblockModule(): void
   {
     if (!Loader::includeModule('iblock')) {
-      throw new SystemException('Модуль iblock не подключён.');
+      throw new SystemException(Loc::getMessage('TITANIC_IBLOCK_INSTALLER_IBLOCK_MODULE_NOT_LOADED'));
     }
   }
 }

@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Models\Titanic\Install;
 
 use Bitrix\Main\Application;
+use Bitrix\Main\Localization\Loc;
 use Bitrix\Main\ORM\Data\DataManager;
 use Bitrix\Main\ORM\Entity as Base;
 use Models\Titanic\Orm\CabinsTable;
 use Models\Titanic\Orm\PassengerCabinTable;
 use Models\Titanic\Orm\PassengersTable;
 use Models\Titanic\Orm\TicketsTable;
+
+Loc::loadMessages(__FILE__);
 
 /**
  * Устанавливает таблицы базы данных Titanic по определениям ORM-классов D7.
@@ -205,11 +208,7 @@ class TableInstaller
                 'table' => null,
                 'created' => false,
                 'errors' => [
-                    sprintf(
-                        'Не удалось создать таблицу для %s: %s',
-                        $tableClass,
-                        $exception->getMessage()
-                    ),
+                    $this->formatCreateError($tableClass, $exception),
                 ],
             ];
         }
@@ -251,13 +250,31 @@ class TableInstaller
                 'table' => null,
                 'dropped' => false,
                 'errors' => [
-                    sprintf(
-                        'Не удалось удалить таблицу для %s: %s',
-                        $tableClass,
-                        $exception->getMessage()
-                    ),
+                    $this->formatDropError($tableClass, $exception),
                 ],
             ];
         }
+    }
+
+    private function formatCreateError(string $tableClass, \Throwable $exception): string
+    {
+        return (string)Loc::getMessage(
+            'TITANIC_TABLE_INSTALLER_TABLE_CREATE_FAILED',
+            [
+                '#TABLE_CLASS#' => $tableClass,
+                '#ERROR#' => $exception->getMessage(),
+            ]
+        );
+    }
+
+    private function formatDropError(string $tableClass, \Throwable $exception): string
+    {
+        return (string)Loc::getMessage(
+            'TITANIC_TABLE_INSTALLER_TABLE_DROP_FAILED',
+            [
+                '#TABLE_CLASS#' => $tableClass,
+                '#ERROR#' => $exception->getMessage(),
+            ]
+        );
     }
 }

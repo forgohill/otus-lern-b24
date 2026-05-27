@@ -12,6 +12,16 @@ body {
  padding: 24px 16px 48px;
 }
 
+.sandbox-page--compact {
+ max-width: 1040px;
+ padding: 20px 14px 40px;
+}
+
+.sandbox-page--compact .sandbox-top-actions {
+ margin-bottom: 12px;
+ gap: 8px;
+}
+
 .sandbox-hero {
  background: #f8fafc;
  border: 1px solid #dfe5ec;
@@ -105,6 +115,95 @@ body {
  display: flex;
  gap: 12px;
  flex-wrap: wrap;
+}
+
+.sandbox-page--compact .sandbox-hero {
+ padding: 20px;
+ margin-bottom: 18px;
+ border-radius: 14px;
+}
+
+.sandbox-page--compact .sandbox-title {
+ margin-bottom: 8px;
+ font-size: 24px;
+ line-height: 32px;
+}
+
+.sandbox-page--compact .sandbox-text {
+ font-size: 14px;
+ line-height: 22px;
+}
+
+.sandbox-page--compact .sandbox-section {
+ margin-bottom: 18px;
+ border-radius: 14px;
+}
+
+.sandbox-page--compact .sandbox-section-header {
+ padding: 14px 18px;
+ font-size: 18px;
+ line-height: 24px;
+}
+
+.sandbox-page--compact .sandbox-section-body {
+ padding: 18px;
+}
+
+.sandbox-page--compact .sandbox-actions-item {
+ padding: 12px 14px;
+ gap: 12px;
+}
+
+.sandbox-page--compact .sandbox-actions-label {
+ font-size: 14px;
+ line-height: 20px;
+}
+
+.sandbox-page--compact .sandbox-actions-description {
+ font-size: 13px;
+ line-height: 19px;
+}
+
+.sandbox-page--compact .sandbox-actions .ui-btn {
+ min-height: 34px;
+ padding-left: 14px;
+ padding-right: 14px;
+}
+
+.sandbox-green-square {
+ width: 100px;
+ height: 100px;
+ background: #2dbf5a;
+ border-radius: 8px;
+ margin-top: 16px;
+}
+
+.sandbox-red-square {
+ width: 100px;
+ height: 100px;
+ background: #e74c3c;
+ border-radius: 8px;
+ margin-top: 16px;
+}
+
+.sandbox-blue-rectangle {
+ width: 100px;
+ height: 50px;
+ background: #4aa3df;
+ border-radius: 8px;
+ margin-top: 16px;
+}
+
+.sandbox-lilac-rectangle {
+ width: 100px;
+ height: 50px;
+ background: #b59cff;
+ border-radius: 8px;
+ margin-top: 16px;
+}
+
+.sandbox-action-form {
+ margin: 0;
 }
 
 .sandbox-status {

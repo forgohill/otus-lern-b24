@@ -78,6 +78,26 @@ $sandboxSections = [
   ],
  ],
  [
+  'title' => 'Кеш',
+  'items' => [
+   [
+    'label' => 'D7 cache',
+    'description' => 'Пример с $cache->clean() и кнопкой очистки кеша.',
+    'url' => '/local/sandbox/crm-exaple-cache/d7-cache.php',
+   ],
+   [
+    'label' => 'Tagged cache',
+    'description' => 'Тегированный кеш с ClearByTag и сбросом по кнопке.',
+    'url' => '/local/sandbox/crm-exaple-cache/tagged-cache.php',
+   ],
+   [
+    'label' => 'Old cache',
+    'description' => 'Сравнение старого CPHPCache и D7 Cache API.',
+    'url' => '/local/sandbox/crm-exaple-cache/old-cahce.php',
+   ],
+  ],
+ ],
+ [
   'title' => 'HL-блоки - справочники',
   'items' => [
    [
@@ -117,7 +137,7 @@ $sandboxSections = [
 
 ?>
 
-<div class="sandbox-page">
+<div class="sandbox-page sandbox-page--compact">
  <div class="sandbox-top-actions">
   <a href="/homeworks/index.php" class="ui-btn ui-btn-light-border ui-btn-round">Назад</a>
  </div>

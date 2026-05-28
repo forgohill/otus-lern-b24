@@ -35,6 +35,11 @@ $sandboxSections = [
     'description' => 'Добавление, выборка, обновление и удаление записей через D7 ORM.',
     'url' => '/local/sandbox/orm/tables/crud/',
    ],
+   [
+    'label' => 'Компонент списка таблицы БД',
+    'description' => 'Минимальная страница для будущего компонента списка таблицы базы данных.',
+    'url' => '/local/sandbox/lesson-components/',
+   ],
   ],
  ],
  [

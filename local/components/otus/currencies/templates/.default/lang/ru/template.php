@@ -1,0 +1,4 @@
+<?php
+$MESS['OTUS_CURRENCIES_TEMPLATE_TITLE'] = 'Текущий курс валюты';
+$MESS['OTUS_CURRENCIES_TEMPLATE_RATE'] = 'Курс';
+$MESS['OTUS_CURRENCIES_TEMPLATE_AMOUNT_CNT'] = 'Количество';

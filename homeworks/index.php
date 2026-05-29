@@ -4,6 +4,7 @@ use Bitrix\Main\Page\Asset;
 
 require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php"); ?>
 <?php
+/** @var CMain $APPLICATION */
 $APPLICATION->SetTitle("Список Домашних работ");
 
 Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
@@ -60,12 +61,12 @@ Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bo
             </h2>
         </li>
         <li>
-            <h2 class="item clock"><a href="homework4/">ДЗ #4: Создание своих таблиц БД и написание модели данных к ним</a>
+            <h2 class="item done"><a href="homework4/">ДЗ #4: Создание своих таблиц БД и написание модели данных к ним</a>
                 <i class="icon"></i>
             </h2>
         </li>
         <li>
-            <h2 class="item"><a href="homework5/">ДЗ #5: Компонент списка таблицы БД</a>
+            <h2 class="item clock"><a href="homework5/">ДЗ #5: Кастомный компонент - валюты</a>
                 <i class="icon"></i>
             </h2>
         </li>

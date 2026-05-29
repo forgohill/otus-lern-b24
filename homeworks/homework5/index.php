@@ -1,18 +1,26 @@
-<?
-
-use Bitrix\Main\Page\Asset;
-
-require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php"); ?>
 <?php
-$APPLICATION->SetTitle("ДЗ #_: ___");
+require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/header.php");
 
-Asset::getInstance()->addCss('//cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
-
+/** @var CMain $APPLICATION */
+$APPLICATION->SetTitle("ДЗ 5: Кастомный компонент - Валюты");
 
 ?>
-<h1 class="mb-3"><? $APPLICATION->ShowTitle() ?></h1>
+<p>
+ <a class="ui-btn ui-btn-light-border ui-btn-round" href="/homeworks/">
+  Назад к списку ДЗ
+ </a>
+</p>
 
+<?php
 
-
-
-<? require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php"); ?>
+$APPLICATION->IncludeComponent(
+ "otus:currencies",
+ ".default",
+ [
+  "COMPONENT_TEMPLATE" => ".default",
+  "CURRENCY" => "840"
+ ],
+ false
+);
+?>
+<?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php"); ?>

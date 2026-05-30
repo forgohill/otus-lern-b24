@@ -39,9 +39,12 @@ $arComponentParameters = [
 			'NAME' => Loc::getMessage('CURRENCY'),
 			'TYPE' => 'LIST',
 			'VALUES' => $currencyList,
-			'DEFAULT' => 'RUB',
+			'DEFAULT' => '643',
 			'MULTIPLE' => 'N',
 			'ADDITIONAL_VALUES' => 'N',
+		],
+		'CACHE_TIME' => [
+			'DEFAULT' => 3600,
 		],
 	],
 ];

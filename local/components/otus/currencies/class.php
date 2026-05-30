@@ -26,7 +26,7 @@ class CurrenciesComp extends CBitrixComponent
 	 */
 	public function onPrepareComponentParams($arParams)
 	{
-		$arParams['CURRENCY'] = (string)($arParams['CURRENCY'] ?? 'RUB');
+		$arParams['CURRENCY'] = (string)($arParams['CURRENCY'] ?? '643');
 
 		return $arParams;
 	}
@@ -43,23 +43,26 @@ class CurrenciesComp extends CBitrixComponent
 			return;
 		}
 
-		$currency = CurrencyTable::getList([
-			'filter' => [
-				'=NUMCODE' => $this->arParams['CURRENCY'],
-			],
-		])->fetch();
+		if ($this->startResultCache()) {
+			$currency = CurrencyTable::getList([
+				'filter' => [
+					'=NUMCODE' => $this->arParams['CURRENCY'],
+				],
+			])->fetch();
 
-		if (!$currency) {
-			ShowError(Loc::getMessage('OTUS_CURRENCIES_NOT_FOUND'));
-			return;
+			if (!$currency) {
+				$this->abortResultCache();
+				ShowError(Loc::getMessage('OTUS_CURRENCIES_NOT_FOUND'));
+				return;
+			}
+
+			$this->arResult['CURRENCY'] = [
+				'CODE' => $currency['CURRENCY'],
+				'RATE' => $currency['CURRENT_BASE_RATE'],
+				'AMOUNT_CNT' => $currency['AMOUNT_CNT'],
+			];
+
+			$this->includeComponentTemplate();
 		}
-
-		$this->arResult['CURRENCY'] = [
-			'CODE' => $currency['CURRENCY'],
-			'RATE' => $currency['CURRENT_BASE_RATE'],
-			'AMOUNT_CNT' => $currency['AMOUNT_CNT'],
-		];
-
-		$this->includeComponentTemplate();
 	}
 }

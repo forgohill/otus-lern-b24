@@ -14,13 +14,15 @@ $APPLICATION->SetTitle("ДЗ 5: Кастомный компонент - Валю
 <?php
 
 $APPLICATION->IncludeComponent(
- "otus:currencies",
- ".default",
- [
-  "COMPONENT_TEMPLATE" => ".default",
-  "CURRENCY" => "840"
- ],
- false
+	"otus:currencies", 
+	".default", 
+	[
+		"COMPONENT_TEMPLATE" => ".default",
+		"CURRENCY" => "643",
+		"CACHE_TYPE" => "A",
+		"CACHE_TIME" => "3600"
+	],
+	false
 );
 ?>
 <?php require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/footer.php"); ?>

@@ -1,7 +1,8 @@
 {
  "name": "forgohill/otus-dev-b24",
  "require": {
-  "symfony/var-dumper": "^8.0"
+  "symfony/var-dumper": "^8.0",
+  "phpoffice/phpspreadsheet": "^5.7"
  },
   "autoload": {
    "psr-4": {
